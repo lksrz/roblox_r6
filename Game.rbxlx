@@ -1,0 +1,2092 @@
+<roblox version="4">
+  <Item class="ReplicatedStorage" referent="0">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="1">
+      <Properties>
+        <string name="Name">ClientScripts</string>
+      </Properties>
+    </Item>
+    <Item class="Folder" referent="2">
+      <Properties>
+        <string name="Name">Net</string>
+      </Properties>
+      <Item class="ModuleScript" referent="3">
+        <Properties>
+          <string name="Name">Events</string>
+          <string name="Source"><![CDATA[-- Centralized RemoteEvent/RemoteFunction registry
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Events = {}
+
+local function ensure(name, className)
+    local folder = ReplicatedStorage:FindFirstChild("Remotes")
+    if not folder then
+        folder = Instance.new("Folder")
+        folder.Name = "Remotes"
+        folder.Parent = ReplicatedStorage
+    end
+    local obj = folder:FindFirstChild(name)
+    if not obj then
+        obj = Instance.new(className)
+        obj.Name = name
+        obj.Parent = folder
+    end
+    return obj
+end
+
+Events.RoundChanged = ensure("RoundChanged", "RemoteEvent")
+Events.RequestSpawn = ensure("RequestSpawn", "RemoteFunction")
+Events.UseGadget = ensure("UseGadget", "RemoteEvent")
+Events.FireWeapon = ensure("FireWeapon", "RemoteEvent")
+Events.HitConfirm = ensure("HitConfirm", "RemoteEvent")
+Events.Objective = ensure("ObjectiveEvent", "RemoteEvent")
+
+return Events
+
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+    <Item class="Folder" referent="4">
+      <Properties>
+        <string name="Name">Shared</string>
+      </Properties>
+      <Item class="ModuleScript" referent="5">
+        <Properties>
+          <string name="Name">Config</string>
+          <string name="Source"><![CDATA[-- Central game configuration (shared)
+
+local Config = {
+    forceR6 = true,
+
+    baseplate = {
+        size = Vector3.new(512, 1, 512),
+        color = Color3.fromRGB(163, 162, 165),
+        name = "Baseplate",
+    },
+
+    spawns = {
+        inset = 10,
+        size = Vector3.new(8, 1, 8),
+        forceFieldDuration = 0,
+    },
+
+    teams = {
+        red = { name = "Red", brickColor = "Really red" },
+        green = { name = "Green", brickColor = "Lime green" },
+        autoAssignable = false,
+        assignment = "alternate",
+    },
+
+    -- Debug: Team colors should be different
+    DEBUG_TEAM_COLORS_DIFFERENT = true,
+
+    ROUND = { LENGTH_SEC = 180, WIN_TARGET = 3, SWITCH_SIDES_EVERY = 2 },
+
+    WEAPONS = {
+        RateLimit = 120,  -- requests per minute
+    },
+
+    OBJECTIVE = {
+        Size = Vector3.new(2, 2, 2),
+        Position = Vector3.new(0, 1, 0),
+        Color = Color3.fromRGB(255, 219, 77),
+    },
+
+    EXTRACT = {
+        Size = Vector3.new(10, 1, 10),
+        Position = Vector3.new(0, 0.5, 80),
+        Color = Color3.fromRGB(120, 200, 255),
+    },
+}
+
+return Config
+
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="6">
+        <Properties>
+          <string name="Name">ConfigLoader</string>
+          <string name="Source"><![CDATA[-- Centralized configuration loading utility
+-- Eliminates duplication and ensures consistent fallback behavior
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ConfigLoader = {}
+
+local function getDefaultConfig()
+    return {
+        forceR6 = true,
+        baseplate = {
+            size = Vector3.new(512,1,512),
+            color = Color3.fromRGB(163,162,165),
+            name = "Baseplate"
+        },
+        spawns = {
+            inset = 10,
+            size = Vector3.new(8,1,8),
+            forceFieldDuration = 0
+        },
+        teams = {
+            red = { name = "Red", brickColor = "Really red" },
+            green = { name = "Green", brickColor = "Lime green" },
+            autoAssignable = false,
+            assignment = "alternate",
+        },
+        ROUND = { LENGTH_SEC = 180, WIN_TARGET = 3, SWITCH_SIDES_EVERY = 2 },
+    }
+end
+
+function ConfigLoader.Load(moduleName: string?)
+    -- Try to load from Shared/Config first
+    local ok, config
+    ok, config = pcall(function()
+        local shared = ReplicatedStorage:FindFirstChild("Shared")
+        if shared then
+            local cfg = shared:FindFirstChild("Config") or shared:WaitForChild("Config", 5)
+            if cfg then return require(cfg) end
+        end
+        return nil
+    end)
+
+    if ok and config then return config end
+
+    -- Fallback to direct ReplicatedStorage/Config
+    ok, config = pcall(function()
+        local cfg = ReplicatedStorage:FindFirstChild("Config") or ReplicatedStorage:WaitForChild("Config", 5)
+        if cfg then return require(cfg) end
+        return nil
+    end)
+
+    if ok and config then return config end
+
+    -- Final fallback to defaults with warning
+    warn(string.format("[ConfigLoader] Using default config; ReplicatedStorage.Shared.Config not found%s",
+        moduleName and " (requested by " .. moduleName .. ")" or ""))
+    return getDefaultConfig()
+end
+
+return ConfigLoader
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="7">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Folder" referent="8">
+      <Properties>
+        <string name="Name">AntiCheat</string>
+      </Properties>
+      <Item class="ModuleScript" referent="9">
+        <Properties>
+          <string name="Name">RateLimiter</string>
+          <string name="Source"><![CDATA[local RateLimiter = {}
+local buckets = {} -- [userId][key] = {count, t0}
+
+function RateLimiter.Allow(player, key, perMinute)
+    local now = os.clock()
+    local u = player.UserId
+    buckets[u] = buckets[u] or {}
+    local b = buckets[u][key]
+    if not b or now - b.t0 > 60 then b = {count=0, t0=now}; buckets[u][key]=b end
+    if b.count >= perMinute then return false end
+    b.count += 1
+    return true
+end
+
+return RateLimiter
+
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+    <Item class="Folder" referent="10">
+      <Properties>
+        <string name="Name">Debug</string>
+      </Properties>
+    </Item>
+    <Item class="Folder" referent="11">
+      <Properties>
+        <string name="Name">Gameplay</string>
+      </Properties>
+      <Item class="ModuleScript" referent="12">
+        <Properties>
+          <string name="Name">HitRegService</string>
+          <string name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local function getEvents()
+    -- TODO: ISSUE #8 - Code Duplication: Remote event creation logic duplicated across multiple files
+    -- Should be centralized in a shared utility module
+    local net = ReplicatedStorage:FindFirstChild("Net")
+    if net and net:FindFirstChild("Events") then
+        local ok, mod = pcall(require, net.Events)
+        if ok and mod then return mod end
+    end
+    local folder = ReplicatedStorage:FindFirstChild("Remotes")
+    if not folder then
+        folder = Instance.new("Folder"); folder.Name = "Remotes"; folder.Parent = ReplicatedStorage
+    end
+    local function ensure(name, class)
+        local obj = folder:FindFirstChild(name)
+        if not obj then obj = Instance.new(class); obj.Name = name; obj.Parent = folder end
+        return obj
+    end
+    return {
+        FireWeapon = ensure("FireWeapon", "RemoteEvent"),
+        HitConfirm = ensure("HitConfirm", "RemoteEvent"),
+    }
+end
+
+local Events = getEvents()
+local RateLimiter = require(game.ServerScriptService.AntiCheat.RateLimiter)
+
+-- Simple config to avoid ConfigLoader dependency
+local Config = {
+    WEAPONS = {
+        RateLimit = 120,  -- requests per minute
+    },
+}
+
+-- Input validation utility functions
+local function validateVector3(vec, maxMagnitude)
+    if typeof(vec) ~= "Vector3" then return false end
+    if vec.X ~= vec.X or vec.Y ~= vec.Y or vec.Z ~= vec.Z then return false end -- Check for NaN
+    if maxMagnitude and vec.Magnitude > maxMagnitude then return false end
+    return true
+end
+
+local function validatePlayerState(player)
+    if not player then return false, "Player is nil" end
+    if not player.Parent then return false, "Player is not in game" end
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local humanoid = player.Character.Humanoid
+        if humanoid.Health <= 0 then return false, "Player is dead" end
+    end
+    return true
+end
+
+local function validateWeaponFirePayload(payload)
+    if not payload then return false, "Payload is nil" end
+    if typeof(payload) ~= "table" then return false, "Payload is not a table" end
+
+    if not payload.origin or not payload.dir or not payload.weaponName then
+        return false, "Missing required fields: origin, dir, or weaponName"
+    end
+
+    if not validateVector3(payload.origin, 1000) then
+        return false, "Invalid origin vector"
+    end
+
+    if not validateVector3(payload.dir, 10) then
+        return false, "Invalid direction vector"
+    end
+
+    if typeof(payload.weaponName) ~= "string" then
+        return false, "Invalid weapon name type"
+    end
+
+    return true
+end
+
+-- Store event connections to prevent memory leaks
+local connections = {}
+
+-- Clean up function to disconnect all stored connections
+local function cleanupConnections()
+    for _, connection in ipairs(connections) do
+        if connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    connections = {}
+end
+
+-- Store the connection to prevent memory leaks
+table.insert(connections, Events.FireWeapon.OnServerEvent:Connect(function(plr, payload)
+    -- Comprehensive input validation and error handling
+    local isPlayerValid, playerError = validatePlayerState(plr)
+    if not isPlayerValid then
+        warn(string.format("[HitRegService] Invalid player state: %s (UserId: %s)", playerError, plr.UserId or "unknown"))
+        return
+    end
+
+    local isPayloadValid, payloadError = validateWeaponFirePayload(payload)
+    if not isPayloadValid then
+        warn(string.format("[HitRegService] Invalid payload: %s (UserId: %s)", payloadError, plr.UserId))
+        Events.HitConfirm:FireClient(plr, { ok = false, error = "Invalid request" })
+        return
+    end
+
+    -- Rate limiting check
+    if not RateLimiter.Allow(plr, "FireWeapon", Config.WEAPONS.RateLimit or 120) then
+        Events.HitConfirm:FireClient(plr, { ok = false, error = "Rate limit exceeded" })
+        return
+    end
+
+    -- Perform raycast with error handling
+    local success, result = pcall(function()
+        return workspace:Raycast(payload.origin, payload.dir)
+    end)
+
+    if not success then
+        warn(string.format("[HitRegService] Raycast failed: %s (UserId: %s)", result, plr.UserId))
+        Events.HitConfirm:FireClient(plr, { ok = false, error = "Raycast failed" })
+        return
+    end
+
+    -- Process hit result
+    if result then
+        -- TODO: Add hit processing logic (damage, destruction, etc.)
+        Events.HitConfirm:FireClient(plr, { ok = true, hit = true })
+    else
+        Events.HitConfirm:FireClient(plr, { ok = true, hit = false })
+    end
+end))
+
+-- Cleanup on game shutdown
+game:BindToClose(cleanupConnections)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="13">
+        <Properties>
+          <string name="Name">ObjectiveService</string>
+          <string name="Source"><![CDATA[-- Objective: spawn, pickup, steal, carry-follow, deliver at Green spawn
+
+local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Simple config to avoid ConfigLoader dependency
+local Config = {
+    OBJECTIVE = {
+        Size = Vector3.new(3, 3, 3),
+        Color = Color3.fromRGB(255, 255, 0),
+        SpawnDistance = 30,
+        TimeLimit = 60,
+    },
+    EXTRACT = {
+        Size = Vector3.new(10, 1, 10),
+        Color = Color3.fromRGB(120, 200, 255),
+    },
+}
+
+-- Store event connections to prevent memory leaks
+local connections = {}
+
+-- Clean up function to disconnect all stored connections
+local function cleanupConnections()
+    for _, connection in ipairs(connections) do
+        if connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    connections = {}
+end
+
+local ObjectiveService = {}
+local objectiveModel = nil
+local carrier = nil
+local extractZone = nil
+local roundStartTime = nil
+local redSpawnPosition = nil
+local greenSpawnPosition = nil
+local followConnection = nil
+local objectivePrompt = nil
+
+local function getOrCreatePart(name, size, position, color)
+    local p = workspace:FindFirstChild(name)
+    if not p then
+        p = Instance.new("Part")
+        p.Name = name
+        p.Anchored = true
+        p.CanCollide = false
+        p.TopSurface = Enum.SurfaceType.Smooth
+        p.BottomSurface = Enum.SurfaceType.Smooth
+        p.Parent = workspace
+    end
+    p.Size = size
+    p.Position = position
+    if color then p.Color = color end
+    return p
+end
+
+-- Input validation functions
+local function validatePlayerState(player)
+    if not player then return false, "Player is nil" end
+    if not player.Parent then return false, "Player is not in game" end
+    return true
+end
+
+local function validateObjectiveEventPayload(payload)
+    if not payload then return false, "Payload is nil" end
+    if typeof(payload) ~= "table" then return false, "Payload is not a table" end
+
+    if not payload.type then
+        return false, "Missing required field: type"
+    end
+
+    if typeof(payload.type) ~= "string" then
+        return false, "Invalid type field"
+    end
+
+    local validTypes = { "Pickup", "Drop" }
+    local isValidType = false
+    for _, validType in ipairs(validTypes) do
+        if payload.type == validType then
+            isValidType = true
+            break
+        end
+    end
+
+    if not isValidType then
+        return false, "Invalid event type: " .. payload.type
+    end
+
+    return true
+end
+
+-- Get events with error handling
+local function getEvents()
+    local net = ReplicatedStorage:FindFirstChild("Net")
+    if net and net:FindFirstChild("Events") then
+        local ok, mod = pcall(require, net.Events)
+        if ok and mod then return mod end
+    end
+    local folder = ReplicatedStorage:FindFirstChild("Remotes")
+    if not folder then
+        folder = Instance.new("Folder")
+        folder.Name = "Remotes"
+        folder.Parent = ReplicatedStorage
+    end
+    local function ensure(name, className)
+        local obj = folder:FindFirstChild(name)
+        if not obj then
+            obj = Instance.new(className)
+            obj.Name = name
+            obj.Parent = folder
+        end
+        return obj
+    end
+    return {
+        Objective = ensure("ObjectiveEvent", "RemoteEvent"),
+    }
+end
+
+local Events = getEvents()
+
+-- Function to get random position away from green spawn
+local function clampToBaseplate(pos, objHalfY)
+    local base = workspace:FindFirstChild("Baseplate")
+    if not base or not base:IsA("BasePart") then
+        return pos -- no baseplate to clamp against
+    end
+    local margin = 5
+    local half = base.Size * 0.5
+    local minX = base.Position.X - half.X + margin
+    local maxX = base.Position.X + half.X - margin
+    local minZ = base.Position.Z - half.Z + margin
+    local maxZ = base.Position.Z + half.Z - margin
+    local yTop = base.Position.Y + half.Y + (objHalfY or 1.5)
+    local x = math.clamp(pos.X, minX, maxX)
+    local z = math.clamp(pos.Z, minZ, maxZ)
+    return Vector3.new(x, yTop, z)
+end
+
+local function getRandomObjectivePosition(greenSpawnPos, distance, objSize)
+    local angle = math.random() * math.pi * 2
+    local x = greenSpawnPos.X + math.cos(angle) * distance
+    local z = greenSpawnPos.Z + math.sin(angle) * distance
+    local y = greenSpawnPos.Y + (objSize and objSize.Y or 3) * 0.5
+    local candidate = Vector3.new(x, y, z)
+    return clampToBaseplate(candidate, (objSize and objSize.Y or 3) * 0.5)
+end
+
+local function stopFollowing()
+    if followConnection and followConnection.Connected then
+        followConnection:Disconnect()
+    end
+    followConnection = nil
+end
+
+local function startFollowing(plr)
+    stopFollowing()
+    if not objectiveModel or not plr or not plr.Character then return end
+    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    objectiveModel.Anchored = true
+    objectiveModel.CanCollide = false
+    local offset = Vector3.new(0, 4, 0)
+    followConnection = RunService.Heartbeat:Connect(function()
+        if not carrier or not carrier.Character or not carrier.Character:FindFirstChild("HumanoidRootPart") then
+            stopFollowing()
+            return
+        end
+        local cframe = carrier.Character.HumanoidRootPart.CFrame + offset
+        objectiveModel.CFrame = cframe
+    end)
+end
+
+function ObjectiveService.StartRound(redSpawnPos)
+    -- start new round
+    redSpawnPosition = redSpawnPos
+    roundStartTime = nil  -- Don't start timer yet, wait for StartTimer()
+
+    -- Clean up existing objective and carrier
+    ObjectiveService.CleanupObjective()
+
+    -- Find green spawn position (should be at (200, 1.5, 200))
+    local greenSpawn = workspace:FindFirstChild("GreenSpawn")
+    local greenPos = greenSpawn and greenSpawn.Position or Vector3.new(200, 1.5, 200)
+    greenSpawnPosition = greenPos
+
+    -- Calculate random objective position
+    local objSize = Config.OBJECTIVE.Size or Vector3.new(3,3,3)
+    local objectivePos = getRandomObjectivePosition(greenPos, Config.OBJECTIVE.SpawnDistance, objSize)
+
+    -- positions computed for spawn
+
+    -- Create objective - make it bright and visible
+    local objColor = Config.OBJECTIVE.Color or Color3.fromRGB(255, 255, 0)
+
+    -- Always create a simple visible box for now
+    objectiveModel = getOrCreatePart("ObjectiveBox", objSize, objectivePos, objColor)
+    
+    -- Make it very visible
+    objectiveModel.Material = Enum.Material.Neon
+    objectiveModel.BrickColor = BrickColor.new("Bright yellow")
+
+    -- Make it glow and more visible
+    local glow = Instance.new("PointLight")
+    glow.Color = Color3.fromRGB(255, 255, 0)
+    glow.Brightness = 3
+    glow.Range = 25
+    glow.Parent = objectiveModel
+
+    -- Add a pulsing effect
+    local tweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+    local tween = tweenService:Create(objectiveModel, tweenInfo, {Transparency = 0.2})
+    tween:Play()
+
+    -- Add surface light for even more visibility
+    local surfaceLight = Instance.new("SurfaceLight")
+    surfaceLight.Color = Color3.fromRGB(255, 255, 0)
+    surfaceLight.Brightness = 5
+    surfaceLight.Range = 15
+    surfaceLight.Parent = objectiveModel
+
+
+    -- Add a beam effect to make it even more visible
+    local beam = Instance.new("Beam")
+    beam.Color = ColorSequence.new(Color3.fromRGB(255, 255, 0))
+    beam.Width0 = 2
+    beam.Width1 = 2
+    beam.Parent = objectiveModel
+
+    -- Add some particle effects
+    local particles = Instance.new("ParticleEmitter")
+    particles.Color = ColorSequence.new(Color3.fromRGB(255, 255, 0))
+    particles.Size = NumberSequence.new(0.5, 1)
+    particles.Lifetime = NumberRange.new(2, 4)
+    particles.Rate = 20
+    particles.Speed = NumberRange.new(2, 5)
+    particles.Parent = objectiveModel
+
+
+    -- Add a simple ProximityPrompt to allow pickup (Red team only)
+    if objectiveModel:FindFirstChild("PickupPrompt") then
+        objectiveModel.PickupPrompt:Destroy()
+    end
+    objectivePrompt = Instance.new("ProximityPrompt")
+    objectivePrompt.Name = "PickupPrompt"
+    objectivePrompt.ActionText = "Pick Up"
+    objectivePrompt.ObjectText = "Objective"
+    objectivePrompt.HoldDuration = 0.25
+    objectivePrompt.RequiresLineOfSight = false
+    objectivePrompt.MaxActivationDistance = 12
+    objectivePrompt.Parent = objectiveModel
+
+    table.insert(connections, objectivePrompt.Triggered:Connect(function(plr)
+        if not plr or not plr.Team then return end
+
+        -- If current carrier uses the prompt, drop it
+        if carrier == plr then
+            stopFollowing()
+
+            -- Drop objective at player's current position (not random spawn)
+            if objectiveModel and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local dropPos = plr.Character.HumanoidRootPart.Position + Vector3.new(0, 2, 3)
+                objectiveModel.Position = dropPos
+                objectiveModel.Anchored = true
+                objectiveModel.CanCollide = false
+                objectiveModel.Transparency = 0
+                if objectivePrompt then objectivePrompt.ActionText = "Pick Up" end
+                for _, child in ipairs(objectiveModel:GetChildren()) do
+                    if child:IsA("ParticleEmitter") then child.Enabled = true end
+                    if child:IsA("Light") then child.Enabled = true end
+                    if child:IsA("Beam") then child.Enabled = true end
+                end
+            end
+
+            carrier = nil
+            Events.Objective:FireAllClients({ type = "Dropped", by = plr.UserId })
+            return
+        end
+
+        if not carrier then
+            -- Ground pickup: allow both teams
+            carrier = plr
+            print("[ObjectiveService] Player", plr.Name, "picked up objective. Team:", plr.Team and plr.Team.Name or "No team")
+            startFollowing(plr)
+            objectivePrompt.ActionText = "Drop/Steal"
+            Events.Objective:FireAllClients({ type = "Carry", by = plr.UserId })
+            return
+        end
+
+        -- Steal: allow opposing team to take from current carrier
+        if carrier and carrier.Team and plr.Team and carrier.Team ~= plr.Team then
+            local prev = carrier
+            carrier = plr
+            startFollowing(plr)
+            objectivePrompt.ActionText = "Drop/Steal"
+            Events.Objective:FireAllClients({ type = "Stolen", from = prev.UserId, by = plr.UserId })
+        end
+    end))
+
+    -- Broadcast objective spawn to all clients (include Green spawn for guidance)
+    Events.Objective:FireAllClients({
+        type = "ObjectiveSpawned",
+        position = objectivePos,
+        timeLimit = Config.OBJECTIVE.TimeLimit,
+        greenSpawn = greenPos,
+        redSpawn = redSpawnPos
+    })
+end
+
+function ObjectiveService.GetTimeRemaining()
+    if not roundStartTime then return Config.OBJECTIVE.TimeLimit end  -- Return full time if not started
+    local elapsed = os.clock() - roundStartTime
+    return math.max(0, Config.OBJECTIVE.TimeLimit - elapsed)
+end
+
+function ObjectiveService.Tick()
+    print("[ObjectiveService] Tick called - Carrier:", carrier and carrier.Name or "nil", "RedSpawn:", redSpawnPosition and "set" or "nil")
+
+    -- Check time limit first
+    local timeRemaining = ObjectiveService.GetTimeRemaining()
+    if roundStartTime and timeRemaining <= 0 then  -- Only check time if timer started
+        print("[ObjectiveService] Time up! Returning DefenseWin")
+        Events.Objective:FireAllClients({ type = "TimeUp", winner = "Defense" })
+        return "DefenseWin"
+    end
+
+    -- Check if red player with objective is at red spawn
+    if carrier and redSpawnPosition then
+        print("[ObjectiveService] Carrier exists:", carrier.Name, "Team:", carrier.Team and carrier.Team.Name or "No team")
+
+        -- Check if carrier is still valid
+        local isCarrierValid = validatePlayerState(carrier)
+        if not isCarrierValid then
+            print("[ObjectiveService] Carrier invalid, dropping")
+            carrier = nil
+            Events.Objective:FireAllClients({ type="Dropped", by=0 })
+            return nil
+        end
+
+        -- Check if carrier is red team
+        if carrier.Team and carrier.Team.Name == "Red" then
+            print("[ObjectiveService] Red carrier detected")
+            -- Check if carrier's character exists and is at RED spawn (main win condition)
+            if carrier.Character and carrier.Character:FindFirstChild("HumanoidRootPart") and redSpawnPosition then
+                local hrp = carrier.Character.HumanoidRootPart
+                local distanceToRedSpawn = (hrp.Position - redSpawnPosition).Magnitude
+
+                print("[ObjectiveService] Red carrier distance to spawn:", distanceToRedSpawn, "Position:", hrp.Position, "Red spawn:", redSpawnPosition)
+                if distanceToRedSpawn < 15 then  -- Increased from 10 to 15
+                    print("[ObjectiveService] Red team delivered! Distance:", distanceToRedSpawn)
+                    Events.Objective:FireAllClients({
+                        type = "ObjectiveDelivered",
+                        by = carrier.UserId,
+                        winner = "Attack"
+                    })
+                    stopFollowing()
+                    carrier = nil
+                    return "AttackWin"
+                end
+            end
+
+            if not (carrier.Character and carrier.Character:FindFirstChild("HumanoidRootPart")) then
+                -- Carrier died or lost character: respawn objective at random location
+                carrier = nil
+                stopFollowing()
+                if objectiveModel then
+                    local objSize = Config.OBJECTIVE.Size or Vector3.new(3,3,3)
+                    local randomPos = getRandomObjectivePosition(greenSpawnPosition, Config.OBJECTIVE.SpawnDistance, objSize)
+                    objectiveModel.Position = randomPos
+                    objectiveModel.Transparency = 0
+                    if objectivePrompt then objectivePrompt.ActionText = "Pick Up" end
+                    for _, child in ipairs(objectiveModel:GetChildren()) do
+                        if child:IsA("ParticleEmitter") then child.Enabled = true end
+                        if child:IsA("Light") then child.Enabled = true end
+                        if child:IsA("Beam") then child.Enabled = true end
+                    end
+                end
+                Events.Objective:FireAllClients({ type="Dropped", by=0 })
+            end
+        end
+    end
+
+    return nil
+end
+
+-- Event handling with validation
+table.insert(connections, Events.Objective.OnServerEvent:Connect(function(plr, payload)
+    -- Validate player and payload
+    local isPlayerValid, playerError = validatePlayerState(plr)
+    if not isPlayerValid then
+        warn(string.format("[ObjectiveService] Invalid player state: %s (UserId: %s)", playerError, plr.UserId or "unknown"))
+        return
+    end
+
+    local isPayloadValid, payloadError = validateObjectiveEventPayload(payload)
+    if not isPayloadValid then
+        warn(string.format("[ObjectiveService] Invalid payload: %s (UserId: %s)", payloadError, plr.UserId))
+        return
+    end
+
+    -- Process objective events
+    if payload.type == "Pickup" and not carrier then
+        carrier = plr
+        Events.Objective:FireAllClients({ type="Carry", by=plr.UserId })
+    elseif payload.type == "Drop" and carrier == plr then
+        carrier = nil
+        Events.Objective:FireAllClients({ type="Dropped", by=plr.UserId })
+    end
+end))
+
+-- Start the actual round timer (called when live phase begins)
+function ObjectiveService.StartTimer()
+    roundStartTime = os.clock()
+end
+
+-- Function to clean up objective when round ends
+function ObjectiveService.CleanupObjective()
+    -- Stop following if active
+    stopFollowing()
+
+    -- Clear carrier
+    carrier = nil
+
+    -- Destroy objective model
+    if objectiveModel then
+        objectiveModel:Destroy()
+        objectiveModel = nil
+    end
+
+    -- Clear prompt reference
+    objectivePrompt = nil
+
+    -- Clear spawn positions
+    redSpawnPosition = nil
+    greenSpawnPosition = nil
+    roundStartTime = nil
+end
+
+-- Cleanup on game shutdown
+game:BindToClose(function()
+    cleanupConnections()
+    ObjectiveService.CleanupObjective()
+end)
+
+return ObjectiveService
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+    <Item class="ModuleScript" referent="14">
+      <Properties>
+        <string name="Name">LobbyManager</string>
+        <string name="Source">-- Manages lobby countdown when 2+ players are present
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local RoundService = require(script.Parent.Round.RoundService)
+
+local LobbyManager = {}
+
+local countdownConnection = nil
+local isCountingDown = false
+local countdownStartTime = nil
+
+-- Get events for broadcasting
+local function getEvents()
+    local net = ReplicatedStorage:FindFirstChild("Net")
+    if net and net:FindFirstChild("Events") then
+        local ok, mod = pcall(require, net.Events)
+        if ok and mod then return mod end
+    end
+    local folder = ReplicatedStorage:FindFirstChild("Remotes")
+    if not folder then
+        folder = Instance.new("Folder")
+        folder.Name = "Remotes"
+        folder.Parent = ReplicatedStorage
+    end
+    local function ensure(name, className)
+        local obj = folder:FindFirstChild(name)
+        if not obj then
+            obj = Instance.new(className)
+            obj.Name = name
+            obj.Parent = folder
+        end
+        return obj
+    end
+    return {
+        RoundChanged = ensure("RoundChanged", "RemoteEvent"),
+    }
+end
+
+local Events = getEvents()
+
+local function broadcast(message)
+    Events.RoundChanged:FireAllClients({
+        state = "Lobby",
+        phase = "Lobby",
+        message = message.text,
+        timeRemaining = message.time,
+        scores = { A = 0, B = 0 }  -- Include scores to avoid nil
+    })
+end
+
+local function stopCountdown()
+    if countdownConnection then
+        countdownConnection:Disconnect()
+        countdownConnection = nil
+    end
+    isCountingDown = false
+    countdownStartTime = nil
+    broadcast({ text = "Waiting for players..." })
+end
+
+local function startCountdown()
+    -- Don't start if already counting or not in lobby
+    if isCountingDown then return end
+    if RoundService.IsInMatch() then return end
+
+    -- Check player count
+    if #Players:GetPlayers() &lt; 2 then
+        stopCountdown()
+        return
+    end
+
+    isCountingDown = true
+    countdownStartTime = os.clock()
+    local countdownDuration = 10
+    local lastBroadcast = -1
+
+    countdownConnection = RunService.Heartbeat:Connect(function()
+        -- Check if we still have enough players
+        if #Players:GetPlayers() &lt; 2 then
+            stopCountdown()
+            return
+        end
+
+        -- Check if round already started
+        if RoundService.IsInMatch() then
+            stopCountdown()
+            return
+        end
+
+        local elapsed = os.clock() - countdownStartTime
+        local remaining = math.ceil(countdownDuration - elapsed)
+
+        if remaining ~= lastBroadcast and remaining >= 0 then
+            broadcast({
+                text = "Match starting in...",
+                time = remaining
+            })
+            lastBroadcast = remaining
+        end
+
+        if elapsed >= countdownDuration then
+            stopCountdown()
+            -- Start the match
+            if #Players:GetPlayers() >= 2 then
+                task.spawn(function()
+                    RoundService.StartLoop()
+                end)
+            end
+        end
+    end)
+end
+
+function LobbyManager.CheckAndStart()
+    -- Only manage countdown if we're in lobby
+    if RoundService.IsInMatch() then
+        return
+    end
+
+    if #Players:GetPlayers() >= 2 then
+        if not isCountingDown then
+            startCountdown()
+        end
+    else
+        stopCountdown()
+    end
+end
+
+-- Monitor player changes
+Players.PlayerAdded:Connect(function()
+    task.wait(0.5) -- Let player load
+    LobbyManager.CheckAndStart()
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.defer(function() -- Check after player leaves
+        LobbyManager.CheckAndStart()
+    end)
+end)
+
+-- Also called when match ends
+function LobbyManager.OnMatchEnd()
+    task.wait(1) -- Brief pause after match
+    LobbyManager.CheckAndStart()
+end
+
+-- Initial broadcast when server starts
+task.spawn(function()
+    task.wait(2)
+    if #Players:GetPlayers() &lt; 2 then
+        broadcast({ text = "Waiting for players..." })
+    end
+end)
+
+return LobbyManager</string>
+      </Properties>
+    </Item>
+    <Item class="Script" referent="15">
+      <Properties>
+        <string name="Name">Main</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[-- Bootstraps lobby countdown and round system
+
+local Players = game:GetService("Players")
+
+local LobbyManager = require(script.Parent.LobbyManager)
+
+-- Initialize lobby manager on server start
+task.wait(1) -- Let services initialize
+LobbyManager.CheckAndStart()
+]]></string>
+      </Properties>
+    </Item>
+    <Item class="Folder" referent="16">
+      <Properties>
+        <string name="Name">Round</string>
+      </Properties>
+      <Item class="ModuleScript" referent="17">
+        <Properties>
+          <string name="Name">RoundService</string>
+          <string name="Source"><![CDATA[local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Simple config - avoid dependency on ConfigLoader
+local Config = {
+    ROUND = {
+        LENGTH_SEC = 180,
+        WIN_TARGET = 3,
+        SWITCH_SIDES_EVERY = 2,
+        OBJECTIVE_TIME_LIMIT = 60  -- Time limit for objective capture
+    },
+}
+local function getEvents()
+    -- Prefer module if present, otherwise ensure Remotes directly
+    local net = ReplicatedStorage:FindFirstChild("Net")
+    if net and net:FindFirstChild("Events") then
+        local ok, mod = pcall(require, net.Events)
+        if ok and mod then return mod end
+    end
+    local function ensure(name, className)
+        local folder = ReplicatedStorage:FindFirstChild("Remotes")
+        if not folder then
+            folder = Instance.new("Folder")
+            folder.Name = "Remotes"
+            folder.Parent = ReplicatedStorage
+        end
+        local obj = folder:FindFirstChild(name)
+        if not obj then
+            obj = Instance.new(className)
+            obj.Name = name
+            obj.Parent = folder
+        end
+        return obj
+    end
+    return {
+        RoundChanged = ensure("RoundChanged", "RemoteEvent"),
+        RequestSpawn = ensure("RequestSpawn", "RemoteFunction"),
+        UseGadget = ensure("UseGadget", "RemoteEvent"),
+        FireWeapon = ensure("FireWeapon", "RemoteEvent"),
+        HitConfirm = ensure("HitConfirm", "RemoteEvent"),
+        Objective = ensure("ObjectiveEvent", "RemoteEvent"),
+    }
+end
+
+local Events = getEvents()
+local State = require(script.Parent.RoundState)
+local ObjectiveService = require(script.Parent.Parent.Gameplay.ObjectiveService)
+
+local RoundService = {}
+local scores = { A = 0, B = 0 }
+local state: State.State = State.Lobby
+local roundId = 0
+local loopRunning = false
+
+-- Public function to check if currently in a match
+function RoundService.IsInMatch()
+    return state ~= State.Lobby
+end
+
+local function broadcast(extra)
+    local payload = { state = state, scores = scores, roundId = roundId }
+    if extra then
+        for k,v in pairs(extra) do payload[k] = v end
+    end
+    Events.RoundChanged:FireAllClients(payload)
+end
+
+function RoundService.StartLoop()
+    if loopRunning then return end  -- Prevent multiple loops
+    if state ~= State.Lobby then return end
+
+    loopRunning = true
+    roundId += 1
+    scores = { A = 0, B = 0 }  -- Reset scores for new match
+
+    while scores.A < Config.ROUND.WIN_TARGET and scores.B < Config.ROUND.WIN_TARGET do
+        -- Start objective round - find red spawn position
+        local redSpawn = workspace:FindFirstChild("RedSpawn")
+        local redSpawnPos = redSpawn and redSpawn.Position or Vector3.new(-200, 1.5, -200)
+
+        -- Prep countdown
+        state = State.Prep
+        local prepDur = 5
+        local prepEnd = os.clock() + prepDur
+        local lastRemain = -1
+
+        -- Spawn objective at the start of prep phase
+        ObjectiveService.StartRound(redSpawnPos)
+
+        repeat
+            local remain = math.max(0, math.ceil(prepEnd - os.clock()))
+            if remain ~= lastRemain then
+                broadcast({ timeRemaining = remain, phase = "Prep" })
+                lastRemain = remain
+            end
+            task.wait(0.2)
+        until os.clock() >= prepEnd
+
+        -- Live (round) countdown handled inside PlayRound via callback
+        state = State.Live
+        broadcast({ phase = "Live" })
+
+        -- Start the objective timer NOW (when live phase begins)
+        ObjectiveService.StartTimer()
+
+        -- Run the round with proper win conditions
+        local liveLast = -1
+        local roundResult = RoundService.PlayRound(function(remain)
+            if remain ~= liveLast then
+                broadcast({ timeRemaining = remain, phase = "Live" })
+                liveLast = remain
+            end
+        end)
+
+        if roundResult == "AttackWin" then
+            scores.A += 1
+            print("[RoundService] Attack wins! Red team delivered. Score:", scores.A, "-", scores.B)
+        elseif roundResult == "DefenseWin" then
+            scores.B += 1
+            print("[RoundService] Defense wins! Time expired. Score:", scores.A, "-", scores.B)
+        else
+            print("[RoundService] Round ended with no result:", roundResult)
+        end
+
+        -- Clean up objective when round ends
+        ObjectiveService.CleanupObjective()
+
+        -- End screen countdown
+        state = State.End
+        local endDur = 4
+        local endAt = os.clock() + endDur
+        lastRemain = -1
+        repeat
+            local remain = math.max(0, math.ceil(endAt - os.clock()))
+            if remain ~= lastRemain then
+                broadcast({ timeRemaining = remain, phase = "End" })
+                lastRemain = remain
+            end
+            task.wait(0.2)
+        until os.clock() >= endAt
+    end
+    state = State.Lobby
+    loopRunning = false  -- Reset flag when match ends
+    broadcast({ phase = "MatchComplete" })
+
+    -- Notify lobby manager to handle countdown
+    local LobbyManager = require(script.Parent.Parent.LobbyManager)
+    LobbyManager.OnMatchEnd()
+end
+
+function RoundService.PlayRound(onUpdate)
+    local startTime = os.clock()
+    local timeLimit = Config.ROUND.OBJECTIVE_TIME_LIMIT or 60
+
+    while true do
+        local elapsed = os.clock() - startTime
+
+        -- Check if time limit reached
+        if elapsed >= timeLimit then return "DefenseWin" end
+
+        -- Update clients with remaining time occasionally
+        if onUpdate then
+            local remain = math.max(0, math.ceil(timeLimit - elapsed))
+            onUpdate(remain)
+        end
+
+        -- Check objective service for win conditions
+        local objectiveResult = ObjectiveService.Tick()
+        if objectiveResult then
+            print("[RoundService] ObjectiveService returned:", objectiveResult)
+            return objectiveResult
+        end
+
+        -- Small delay to prevent excessive CPU usage
+        task.wait(0.25)
+    end
+end
+
+return RoundService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="18">
+        <Properties>
+          <string name="Name">RoundState</string>
+          <string name="Source"><![CDATA[-- Round state enum
+export type State = "Lobby" | "Prep" | "Live" | "End"
+local State = { Lobby = "Lobby", Prep = "Prep", Live = "Live", End = "End" }
+return State
+
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+    <Item class="Script" referent="19">
+      <Properties>
+        <string name="Name">Setup</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[-- Game bootstrap: teams, baseplate, spawns, and team assignment
+local Players = game:GetService("Players")
+local TeamsService = game:GetService("Teams")
+local StarterPlayer = game:GetService("StarterPlayer")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Simple config - no complex loading to avoid issues
+local Config = {
+    forceR6 = true,
+    baseplate = {
+        size = Vector3.new(100, 1, 100),  -- Smaller for testing
+        color = Color3.fromRGB(163, 162, 165),
+        name = "Baseplate"
+    },
+    spawns = {
+        inset = 10,
+        size = Vector3.new(8, 1, 8),
+        forceFieldDuration = 0
+    },
+    teams = {
+        red = { name = "Red", brickColor = "Really red" },
+        green = { name = "Green", brickColor = "Lime green" },
+        autoAssignable = false,
+        assignment = "alternate",
+    },
+}
+
+
+-- Global baseplate size for use in other functions
+local BASEPLATE_SIZE = Config.baseplate.size
+
+if Config.forceR6 then
+    -- Try the correct way to set R6 in newer Roblox versions
+    pcall(function()
+        -- Try different methods for R6 enforcement
+        if StarterPlayer:FindFirstChild("CharacterRigType") then
+            StarterPlayer.CharacterRigType = Enum.HumanoidRigType.R6
+        else
+            -- Alternative method for older versions
+            local humanoidDescription = Instance.new("HumanoidDescription")
+            humanoidDescription.RigType = Enum.HumanoidRigType.R6
+            StarterPlayer.HumanoidDescription = humanoidDescription
+        end
+    end)
+end
+
+-- Simple team creation
+local function createTeam(name, brickColor)
+    local team = Instance.new("Team")
+    team.Name = name
+    team.TeamColor = BrickColor.new(brickColor)
+    team.AutoAssignable = false
+    team.Parent = TeamsService
+    return team
+end
+
+local redTeam = createTeam("Red", "Really red")
+local greenTeam = createTeam("Green", "Lime green")
+
+-- Simple baseplate creation
+local function createBaseplate()
+    -- Remove existing baseplate if it exists
+    local existing = Workspace:FindFirstChild("Baseplate")
+    if existing then
+        existing:Destroy()
+    end
+
+    -- Use the global baseplate size
+
+    local bp = Instance.new("Part")
+    bp.Name = "Baseplate"
+    bp.Anchored = true
+    bp.Size = BASEPLATE_SIZE
+    bp.Position = Vector3.new(0, 0.5, 0)
+    bp.TopSurface = Enum.SurfaceType.Smooth
+    bp.BottomSurface = Enum.SurfaceType.Smooth
+    bp.Color = Color3.fromRGB(163, 162, 165)
+    bp.Parent = Workspace
+
+    return bp
+end
+
+local baseplate = createBaseplate()
+
+-- Simple spawn creation
+local function createSpawn(name, team, position)
+    -- Remove existing spawn if it exists
+    local existing = Workspace:FindFirstChild(name)
+    if existing then
+        existing:Destroy()
+    end
+
+    local spawn = Instance.new("SpawnLocation")
+    spawn.Name = name
+    spawn.Anchored = true
+    spawn.CanCollide = true
+    spawn.Neutral = false
+    spawn.Duration = 0 -- No forcefield
+    spawn.AllowTeamChangeOnTouch = false
+    spawn.Size = Vector3.new(8, 1, 8)
+    spawn.TeamColor = team.TeamColor
+    spawn.BrickColor = team.TeamColor
+    spawn.Color = team.TeamColor.Color
+    spawn.CFrame = CFrame.new(position)
+    spawn.Parent = Workspace
+
+    return spawn
+end
+
+-- Simple spawn positioning - adjusted for smaller baseplate
+local halfSize = BASEPLATE_SIZE.X * 0.4  -- 40% from center
+local spawnY = baseplate.Position.Y + (BASEPLATE_SIZE.Y * 0.5) + 0.5
+
+local redPos = Vector3.new(-halfSize, spawnY, -halfSize)   -- Left side
+local greenPos = Vector3.new(halfSize, spawnY, halfSize)   -- Right side
+
+local redSpawn = createSpawn("RedSpawn", redTeam, redPos)
+local greenSpawn = createSpawn("GreenSpawn", greenTeam, greenPos)
+
+-- Disable any other spawn locations that might exist in the place/template
+for _, inst in ipairs(Workspace:GetDescendants()) do
+    if inst:IsA("SpawnLocation") and inst.Name ~= "RedSpawn" and inst.Name ~= "GreenSpawn" then
+        pcall(function() inst.Enabled = false end)
+        inst.Neutral = false
+    end
+end
+
+-- Simple team assignment: alternate between teams
+local function teamCounts()
+    local r, g = 0, 0
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Team == redTeam then r += 1 elseif p.Team == greenTeam then g += 1 end
+    end
+    return r, g
+end
+
+local nextTeamIsRed = true
+local function assignPlayerToTeam(player: Player)
+    local rCount, gCount = teamCounts()
+    local team
+    if rCount == gCount then
+        team = nextTeamIsRed and redTeam or greenTeam
+        nextTeamIsRed = not nextTeamIsRed
+    else
+        team = (rCount < gCount) and redTeam or greenTeam
+    end
+    player.Team = team
+    player.Neutral = false
+    pcall(function() player:LoadCharacter() end)
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do assignPlayerToTeam(plr) end
+Players.PlayerAdded:Connect(function(plr)
+    task.wait(0.2)
+    assignPlayerToTeam(plr)
+end)
+]]></string>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="20">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterCharacterScripts" referent="21">
+      <Properties>
+        <string name="Name">StarterCharacterScripts</string>
+      </Properties>
+    </Item>
+    <Item class="StarterPlayerScripts" referent="22">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="LocalScript" referent="23">
+        <Properties>
+          <string name="Name">DisableChat</string>
+          <string name="Source"><![CDATA[local StarterGui = game:GetService("StarterGui")
+
+pcall(function()
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+end)
+
+pcall(function()
+    local tcs = game:GetService("TextChatService")
+    if tcs then
+        if tcs:FindFirstChild("ChatWindowConfiguration") and tcs.ChatWindowConfiguration then
+            tcs.ChatWindowConfiguration.Enabled = false
+        end
+        if tcs:FindFirstChild("ChatInputBarConfiguration") and tcs.ChatInputBarConfiguration then
+            tcs.ChatInputBarConfiguration.Enabled = false
+        end
+        if tcs:FindFirstChild("BubbleChatConfiguration") and tcs.BubbleChatConfiguration then
+            tcs.BubbleChatConfiguration.Enabled = false
+        end
+    end
+end)
+
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="LocalScript" referent="24">
+        <Properties>
+          <string name="Name">DisableClassicChat</string>
+          <string name="Source"><![CDATA[-- Suppress Classic Chat LocalScripts to avoid SetCore errors in Studio
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerScripts = player:WaitForChild("PlayerScripts", 10)
+
+-- Create a parked folder to avoid parenting-to-nil warnings
+local disabledFolder = Instance.new("Folder")
+disabledFolder.Name = "DisabledChat"
+disabledFolder.Parent = playerScripts
+
+local function tryDisable(child)
+    if not child or not child:IsA("LocalScript") then return end
+    local n = child.Name
+    if n == "ChatScript" or n == "BubbleChat" or n == "ChatMain" then
+        -- Only disable and move if it's still in PlayerScripts
+        if child.Parent == playerScripts then
+            pcall(function() child.Enabled = false end)
+            -- Move into a disabled folder instead of Destroying to avoid warnings
+            pcall(function() child.Parent = disabledFolder end)
+        end
+    end
+end
+
+if playerScripts then
+    for _, ch in ipairs(playerScripts:GetChildren()) do
+        tryDisable(ch)
+    end
+    playerScripts.ChildAdded:Connect(tryDisable)
+end
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="25">
+        <Properties>
+          <string name="Name">Input</string>
+        </Properties>
+        <Item class="LocalScript" referent="26">
+          <Properties>
+            <string name="Name">InputController</string>
+            <string name="Source"><![CDATA[local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local function getEvents()
+    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
+    if ok and mod then return mod end
+    local folder = ReplicatedStorage:WaitForChild("Remotes", 5)
+    local function get(name)
+        return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
+    end
+    return {
+        FireWeapon = get("FireWeapon"),
+    }
+end
+
+-- Input validation functions
+local function validateVector3(vec)
+    if typeof(vec) ~= "Vector3" then return false end
+    if vec.X ~= vec.X or vec.Y ~= vec.Y or vec.Z ~= vec.Z then return false end -- Check for NaN
+    return true
+end
+
+local function validateWeaponInput()
+    local cam = workspace.CurrentCamera
+    if not cam then return false, "No camera" end
+
+    local origin = cam.CFrame.Position
+    local dir = cam.CFrame.LookVector * 500
+
+    if not validateVector3(origin) or not validateVector3(dir) then
+        return false, "Invalid camera vectors"
+    end
+
+    return true, origin, dir
+end
+
+local Events = getEvents()
+
+local firing = false
+
+UserInputService.InputBegan:Connect(function(io, gpe)
+    if gpe then return end
+    if io.UserInputType == Enum.UserInputType.MouseButton1 then
+        firing = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(io)
+    if io.UserInputType == Enum.UserInputType.MouseButton1 then
+        firing = false
+    end
+end)
+
+-- TODO: ISSUE #10 - Performance Issue: RenderStepped runs every frame for input
+-- Should use heartbeat or input service events instead of polling every frame
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not firing then return end
+
+    local isValid, origin, dir = validateWeaponInput()
+    if not isValid then
+        warn("[InputController] Invalid weapon input: " .. origin)
+        return
+    end
+
+    -- Add error handling for server communication
+    local success, result = pcall(function()
+        return Events.FireWeapon:FireServer({ origin = origin, dir = dir, weaponName = "Carbine" })
+    end)
+
+    if not success then
+        warn("[InputController] Failed to fire weapon: " .. result)
+    end
+end)
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="Folder" referent="27">
+        <Properties>
+          <string name="Name">UI</string>
+        </Properties>
+        <Item class="LocalScript" referent="28">
+          <Properties>
+            <string name="Name">Hud</string>
+            <string name="Source">-- Enhanced HUD with clear score display, timer, and team assignment
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Camera = workspace.CurrentCamera
+
+local function getEvents()
+    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
+    if ok and mod then return mod end
+    local folder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:WaitForChild("Remotes", 5)
+    local function get(name)
+        return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
+    end
+    return {
+        RoundChanged = get("RoundChanged"),
+        Objective = get("ObjectiveEvent"),
+    }
+end
+
+local Events = getEvents()
+
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "HUD"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 5
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main container (wider, more prominent)
+local container = Instance.new("Frame")
+container.Size = UDim2.new(0, 460, 0, 100)
+container.AnchorPoint = Vector2.new(0.5, 0)
+container.Position = UDim2.new(0.5, 0, 0, 20)
+container.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+container.BackgroundTransparency = 0.05
+container.BorderSizePixel = 0
+container.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = container
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Transparency = 0.9
+stroke.Parent = container
+
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(28,28,35)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(22,22,28)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(18,18,24))
+}
+gradient.Rotation = 90
+gradient.Parent = container
+
+-- Score display section
+local scoreSection = Instance.new("Frame")
+scoreSection.Size = UDim2.new(1, -40, 0, 40)
+scoreSection.Position = UDim2.new(0, 20, 0, 12)
+scoreSection.BackgroundTransparency = 1
+scoreSection.Parent = container
+
+-- Attack team score
+local attackFrame = Instance.new("Frame")
+attackFrame.Size = UDim2.new(0, 160, 1, 0)
+attackFrame.Position = UDim2.new(0, 0, 0, 0)
+attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
+attackFrame.BackgroundTransparency = 0.7
+attackFrame.BorderSizePixel = 0
+attackFrame.Parent = scoreSection
+
+local attackCorner = Instance.new("UICorner")
+attackCorner.CornerRadius = UDim.new(0, 10)
+attackCorner.Parent = attackFrame
+
+local attackGradient = Instance.new("UIGradient")
+attackGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
+}
+attackGradient.Rotation = 90
+attackGradient.Parent = attackFrame
+
+local attackTeamLabel = Instance.new("TextLabel")
+attackTeamLabel.Size = UDim2.new(0.55, 0, 0.5, 0)
+attackTeamLabel.Position = UDim2.new(0, 12, 0, 0)
+attackTeamLabel.BackgroundTransparency = 1
+attackTeamLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
+attackTeamLabel.TextXAlignment = Enum.TextXAlignment.Left
+attackTeamLabel.Font = Enum.Font.SourceSansSemibold
+attackTeamLabel.TextSize = 12
+attackTeamLabel.Text = "ATTACK"
+attackTeamLabel.Parent = attackFrame
+
+local attackScoreLabel = Instance.new("TextLabel")
+attackScoreLabel.Size = UDim2.new(0.45, -12, 1, 0)
+attackScoreLabel.Position = UDim2.new(0.55, 0, 0, 0)
+attackScoreLabel.BackgroundTransparency = 1
+attackScoreLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+attackScoreLabel.TextXAlignment = Enum.TextXAlignment.Right
+attackScoreLabel.Font = Enum.Font.SourceSansBold
+attackScoreLabel.TextSize = 28
+attackScoreLabel.Text = "0"
+attackScoreLabel.Parent = attackFrame
+
+local attackIcon = Instance.new("TextLabel")
+attackIcon.Size = UDim2.new(0.55, 0, 0.5, 0)
+attackIcon.Position = UDim2.new(0, 12, 0.5, 0)
+attackIcon.BackgroundTransparency = 1
+attackIcon.TextColor3 = Color3.fromRGB(160, 180, 200)
+attackIcon.TextXAlignment = Enum.TextXAlignment.Left
+attackIcon.Font = Enum.Font.SourceSansSemibold
+attackIcon.TextSize = 11
+attackIcon.Text = "⚔️ OFFENSIVE"
+attackIcon.Parent = attackFrame
+
+-- Defense team score
+local defenseFrame = Instance.new("Frame")
+defenseFrame.Size = UDim2.new(0, 160, 1, 0)
+defenseFrame.AnchorPoint = Vector2.new(1, 0)
+defenseFrame.Position = UDim2.new(1, 0, 0, 0)
+defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+defenseFrame.BackgroundTransparency = 0.7
+defenseFrame.BorderSizePixel = 0
+defenseFrame.Parent = scoreSection
+
+local defenseCorner = Instance.new("UICorner")
+defenseCorner.CornerRadius = UDim.new(0, 10)
+defenseCorner.Parent = defenseFrame
+
+local defenseGradient = Instance.new("UIGradient")
+defenseGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
+}
+defenseGradient.Rotation = 90
+defenseGradient.Parent = defenseFrame
+
+local defenseScoreLabel = Instance.new("TextLabel")
+defenseScoreLabel.Size = UDim2.new(0.45, -12, 1, 0)
+defenseScoreLabel.Position = UDim2.new(0, 12, 0, 0)
+defenseScoreLabel.BackgroundTransparency = 1
+defenseScoreLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+defenseScoreLabel.TextXAlignment = Enum.TextXAlignment.Left
+defenseScoreLabel.Font = Enum.Font.SourceSansBold
+defenseScoreLabel.TextSize = 28
+defenseScoreLabel.Text = "0"
+defenseScoreLabel.Parent = defenseFrame
+
+local defenseTeamLabel = Instance.new("TextLabel")
+defenseTeamLabel.Size = UDim2.new(0.55, 0, 0.5, 0)
+defenseTeamLabel.AnchorPoint = Vector2.new(1, 0)
+defenseTeamLabel.Position = UDim2.new(1, -12, 0, 0)
+defenseTeamLabel.BackgroundTransparency = 1
+defenseTeamLabel.TextColor3 = Color3.fromRGB(220, 180, 180)
+defenseTeamLabel.TextXAlignment = Enum.TextXAlignment.Right
+defenseTeamLabel.Font = Enum.Font.SourceSansSemibold
+defenseTeamLabel.TextSize = 12
+defenseTeamLabel.Text = "DEFENSE"
+defenseTeamLabel.Parent = defenseFrame
+
+local defenseIcon = Instance.new("TextLabel")
+defenseIcon.Size = UDim2.new(0.55, 0, 0.5, 0)
+defenseIcon.AnchorPoint = Vector2.new(1, 0)
+defenseIcon.Position = UDim2.new(1, -12, 0.5, 0)
+defenseIcon.BackgroundTransparency = 1
+defenseIcon.TextColor3 = Color3.fromRGB(200, 160, 160)
+defenseIcon.TextXAlignment = Enum.TextXAlignment.Right
+defenseIcon.Font = Enum.Font.SourceSansSemibold
+defenseIcon.TextSize = 11
+defenseIcon.Text = "DEFENSIVE 🛡️"
+defenseIcon.Parent = defenseFrame
+
+-- VS divider
+local vsFrame = Instance.new("Frame")
+vsFrame.Size = UDim2.new(0, 60, 0, 30)
+vsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+vsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+vsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+vsFrame.BorderSizePixel = 0
+vsFrame.Parent = scoreSection
+
+local vsCorner = Instance.new("UICorner")
+vsCorner.CornerRadius = UDim.new(0.5, 0)
+vsCorner.Parent = vsFrame
+
+local vsStroke = Instance.new("UIStroke")
+vsStroke.Thickness = 2
+vsStroke.Color = Color3.fromRGB(255, 255, 255)
+vsStroke.Transparency = 0.8
+vsStroke.Parent = vsFrame
+
+local vsLabel = Instance.new("TextLabel")
+vsLabel.Size = UDim2.new(1, 0, 1, 0)
+vsLabel.BackgroundTransparency = 1
+vsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+vsLabel.Font = Enum.Font.SourceSansBold
+vsLabel.TextSize = 16
+vsLabel.Text = "VS"
+vsLabel.Parent = vsFrame
+
+-- Bottom info section
+local infoSection = Instance.new("Frame")
+infoSection.Size = UDim2.new(1, -40, 0, 36)
+infoSection.Position = UDim2.new(0, 20, 1, -44)
+infoSection.BackgroundTransparency = 1
+infoSection.Parent = container
+
+-- Team indicator
+local teamCard = Instance.new("Frame")
+teamCard.Size = UDim2.new(0, 120, 1, 0)
+teamCard.Position = UDim2.new(0, 0, 0, 0)
+teamCard.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+teamCard.BackgroundTransparency = 0.3
+teamCard.BorderSizePixel = 0
+teamCard.Parent = infoSection
+
+local teamCardCorner = Instance.new("UICorner")
+teamCardCorner.CornerRadius = UDim.new(0, 10)
+teamCardCorner.Parent = teamCard
+
+local teamCardStroke = Instance.new("UIStroke")
+teamCardStroke.Thickness = 2
+teamCardStroke.Color = Color3.fromRGB(100, 100, 100)
+teamCardStroke.Transparency = 0.5
+teamCardStroke.Parent = teamCard
+
+local teamDot = Instance.new("Frame")
+teamDot.Size = UDim2.new(0, 8, 0, 8)
+teamDot.Position = UDim2.new(0, 12, 0.5, -4)
+teamDot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+teamDot.BorderSizePixel = 0
+teamDot.Parent = teamCard
+
+local teamDotCorner = Instance.new("UICorner")
+teamDotCorner.CornerRadius = UDim.new(0.5, 0)
+teamDotCorner.Parent = teamDot
+
+local teamName = Instance.new("TextLabel")
+teamName.Size = UDim2.new(1, -28, 1, 0)
+teamName.Position = UDim2.new(0, 28, 0, 0)
+teamName.BackgroundTransparency = 1
+teamName.TextColor3 = Color3.fromRGB(220, 220, 220)
+teamName.TextXAlignment = Enum.TextXAlignment.Left
+teamName.Font = Enum.Font.SourceSansBold
+teamName.TextSize = 14
+teamName.Text = "SPECTATOR"
+teamName.Parent = teamCard
+
+-- Timer display
+local timerCard = Instance.new("Frame")
+timerCard.Size = UDim2.new(0, 140, 1, 0)
+timerCard.AnchorPoint = Vector2.new(1, 0)
+timerCard.Position = UDim2.new(1, 0, 0, 0)
+timerCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+timerCard.BackgroundTransparency = 0.3
+timerCard.BorderSizePixel = 0
+timerCard.Parent = infoSection
+
+local timerCardCorner = Instance.new("UICorner")
+timerCardCorner.CornerRadius = UDim.new(0, 10)
+timerCardCorner.Parent = timerCard
+
+local timerIcon = Instance.new("TextLabel")
+timerIcon.Size = UDim2.new(0, 30, 1, 0)
+timerIcon.Position = UDim2.new(0, 8, 0, 0)
+timerIcon.BackgroundTransparency = 1
+timerIcon.TextColor3 = Color3.fromRGB(180, 180, 180)
+timerIcon.Font = Enum.Font.SourceSansSemibold
+timerIcon.TextSize = 16
+timerIcon.Text = "⏱"
+timerIcon.Parent = timerCard
+
+local timerText = Instance.new("TextLabel")
+timerText.Size = UDim2.new(1, -38, 1, 0)
+timerText.Position = UDim2.new(0, 38, 0, 0)
+timerText.BackgroundTransparency = 1
+timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+timerText.TextXAlignment = Enum.TextXAlignment.Center
+timerText.Font = Enum.Font.SourceSansBold
+timerText.TextSize = 18
+timerText.Text = "0:00"
+timerText.Parent = timerCard
+
+-- Phase indicator
+local phaseLabel = Instance.new("TextLabel")
+phaseLabel.Size = UDim2.new(0, 160, 1, 0)
+phaseLabel.AnchorPoint = Vector2.new(0.5, 0)
+phaseLabel.Position = UDim2.new(0.5, 0, 0, 0)
+phaseLabel.BackgroundTransparency = 1
+phaseLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+phaseLabel.Font = Enum.Font.SourceSansSemibold
+phaseLabel.TextSize = 13
+phaseLabel.Text = "WAITING"
+phaseLabel.Parent = infoSection
+
+-- Enhanced toast notification
+local toastFrame = Instance.new("Frame")
+toastFrame.Size = UDim2.new(0, 400, 0, 42)
+toastFrame.AnchorPoint = Vector2.new(0.5, 0)
+toastFrame.Position = UDim2.new(0.5, 0, 0, 130)
+toastFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+toastFrame.BackgroundTransparency = 0
+toastFrame.BorderSizePixel = 0
+toastFrame.Visible = false
+toastFrame.Parent = gui
+
+local toastCorner = Instance.new("UICorner")
+toastCorner.CornerRadius = UDim.new(0, 12)
+toastCorner.Parent = toastFrame
+
+local toastStroke = Instance.new("UIStroke")
+toastStroke.Thickness = 2
+toastStroke.Color = Color3.fromRGB(255, 200, 100)
+toastStroke.Transparency = 0.3
+toastStroke.Parent = toastFrame
+
+local toastGradient = Instance.new("UIGradient")
+toastGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180,180,180))
+}
+toastGradient.Rotation = 90
+toastGradient.Parent = toastFrame
+
+local toastText = Instance.new("TextLabel")
+toastText.Size = UDim2.new(1, -20, 1, 0)
+toastText.Position = UDim2.new(0, 10, 0, 0)
+toastText.BackgroundTransparency = 1
+toastText.TextColor3 = Color3.fromRGB(255, 255, 255)
+toastText.Font = Enum.Font.SourceSansBold
+toastText.TextSize = 16
+toastText.Text = ""
+toastText.Parent = toastFrame
+
+-- Arrow removed - no directional guidance
+
+-- State variables
+local currentState = "Lobby"
+local scores = {A = 0, B = 0}
+local roundTimeRemaining = nil
+local roundPhase = nil
+local objectiveTimeLimit = 60
+local objectiveStartTime = 0
+local isCarrier = false
+local greenSpawnPos = nil
+local redSpawnPos = nil
+
+local function formatTime(s)
+    if not s or s &lt; 0 then return "--:--" end
+    local m = math.floor(s/60)
+    local sec = math.floor(s % 60)
+    return string.format("%d:%02d", m, sec)
+end
+
+local function animateToast(text, duration, color)
+    toastText.Text = text or ""
+    toastFrame.Visible = text ~= nil and text ~= ""
+
+    if toastFrame.Visible then
+        -- Set color
+        local toastColor = color or Color3.fromRGB(255, 200, 100)
+        toastStroke.Color = toastColor
+
+        -- Animate in
+        toastFrame.Position = UDim2.new(0.5, 0, 0, 110)
+        local tweenIn = TweenService:Create(
+            toastFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            {Position = UDim2.new(0.5, 0, 0, 130)}
+        )
+        tweenIn:Play()
+
+        -- Schedule hide
+        task.delay(duration or 2, function()
+            local tweenOut = TweenService:Create(
+                toastFrame,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Position = UDim2.new(0.5, 0, 0, 110)}
+            )
+            tweenOut:Play()
+            tweenOut.Completed:Connect(function()
+                toastFrame.Visible = false
+            end)
+        end)
+    end
+end
+
+local function updatePanel()
+    -- Update scores
+    attackScoreLabel.Text = tostring(scores.A or 0)
+    defenseScoreLabel.Text = tostring(scores.B or 0)
+
+    -- Update team indicator
+    local team = Players.LocalPlayer.Team
+    if team then
+        local teamColor = team.TeamColor.Color
+        teamCard.BackgroundColor3 = teamColor:Lerp(Color3.new(0,0,0), 0.7)
+        teamCardStroke.Color = teamColor
+        teamDot.BackgroundColor3 = teamColor
+        teamName.Text = string.upper(team.Name)
+
+        -- Highlight active team score
+        if team.Name == "Attack" or team.Name == "Green" then
+            attackFrame.BackgroundTransparency = 0.5
+            defenseFrame.BackgroundTransparency = 0.75
+            attackGradient.Enabled = true
+            defenseGradient.Enabled = false
+        elseif team.Name == "Defense" or team.Name == "Red" then
+            attackFrame.BackgroundTransparency = 0.75
+            defenseFrame.BackgroundTransparency = 0.5
+            attackGradient.Enabled = false
+            defenseGradient.Enabled = true
+        end
+    else
+        teamCard.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+        teamCardStroke.Color = Color3.fromRGB(100, 100, 100)
+        teamDot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+        teamName.Text = "SPECTATOR"
+        attackFrame.BackgroundTransparency = 0.7
+        defenseFrame.BackgroundTransparency = 0.7
+        attackGradient.Enabled = false
+        defenseGradient.Enabled = false
+    end
+
+    -- Update timer
+    local remain = roundTimeRemaining
+    if remain == nil and currentState == "Live" and objectiveStartTime > 0 then
+        local elapsed = os.clock() - objectiveStartTime
+        remain = math.max(0, objectiveTimeLimit - elapsed)
+    end
+
+    if remain then
+        timerText.Text = formatTime(remain)
+        -- Flash when low time
+        if remain &lt;= 10 then
+            timerText.TextColor3 = Color3.fromRGB(255, 100, 100)
+            timerIcon.TextColor3 = Color3.fromRGB(255, 100, 100)
+        else
+            timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+            timerIcon.TextColor3 = Color3.fromRGB(180, 180, 180)
+        end
+    else
+        timerText.Text = "--:--"
+        timerText.TextColor3 = Color3.fromRGB(180, 180, 180)
+        timerIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+    end
+
+    -- Update phase (don't override if already set by message in onRoundChanged)
+    local phase = roundPhase or currentState
+    if phase == "Lobby" then
+        -- Keep existing text if it's a special message, otherwise show default
+        if not phaseLabel.Text:find("WAITING") and not phaseLabel.Text:find("STARTING") then
+            phaseLabel.Text = "🏠 LOBBY"
+            phaseLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+    elseif phase == "Live" or phase == "InProgress" then
+        phaseLabel.Text = "🎮 LIVE"
+        phaseLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    elseif phase == "Intermission" then
+        phaseLabel.Text = "⏸ BREAK"
+        phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    elseif phase == "Prep" then
+        phaseLabel.Text = "⏱ GET READY"
+        phaseLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+    elseif phase == "End" then
+        phaseLabel.Text = "🏆 ROUND OVER"
+        phaseLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    elseif phase == "MatchComplete" then
+        phaseLabel.Text = "🎯 MATCH COMPLETE"
+        phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+    else
+        if phase and phase ~= "" then
+            phaseLabel.Text = string.upper(phase)
+            phaseLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        end
+    end
+end
+
+local function onRoundChanged(payload)
+    scores = payload and payload.scores or scores
+    currentState = payload and payload.state or currentState
+    roundTimeRemaining = payload and payload.timeRemaining or nil
+    roundPhase = payload and payload.phase or nil
+
+    -- Handle lobby messages
+    if payload and payload.message then
+        -- Update phase label with the message (e.g., "Waiting for players..." or "Match starting in...")
+        phaseLabel.Text = string.upper(payload.message)
+        if payload.message:find("Waiting") then
+            phaseLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+        elseif payload.message:find("starting") then
+            phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        end
+    end
+
+    updatePanel()
+end
+
+local function onObjectiveEvent(payload)
+    if payload.type == "ObjectiveSpawned" then
+        objectiveTimeLimit = payload.timeLimit or 60
+        objectiveStartTime = os.clock()
+        greenSpawnPos = payload.greenSpawn or (workspace:FindFirstChild("GreenSpawn") and workspace.GreenSpawn.Position) or greenSpawnPos
+        redSpawnPos = payload.redSpawn or (workspace:FindFirstChild("RedSpawn") and workspace.RedSpawn.Position) or redSpawnPos
+        animateToast("🎯 OBJECTIVE SPAWNED", 2, Color3.fromRGB(100, 255, 100))
+    elseif payload.type == "ObjectiveDelivered" then
+        isCarrier = false
+        animateToast("✅ OBJECTIVE DELIVERED", 2.5, Color3.fromRGB(100, 255, 100))
+    elseif payload.type == "TimeUp" then
+        animateToast("⏰ TIME'S UP", 2, Color3.fromRGB(255, 100, 100))
+    elseif payload.type == "Carry" then
+        isCarrier = (payload.by == Players.LocalPlayer.UserId)
+        if isCarrier then
+            local t = Players.LocalPlayer.Team
+            if t and t.Name == "Red" then
+                animateToast("💎 CARRYING - GO TO RED SPAWN", 3, Color3.fromRGB(255, 220, 50))
+            else
+                animateToast("💎 CARRYING - AVOID RED TEAM", 3, Color3.fromRGB(255, 220, 50))
+            end
+        else
+            local who = Players:GetPlayerByUserId(payload.by)
+            if who and Players.LocalPlayer.Team and who.Team == Players.LocalPlayer.Team then
+                animateToast("👥 ALLY HAS OBJECTIVE", 1.5, Color3.fromRGB(100, 200, 255))
+            else
+                animateToast("⚠️ ENEMY HAS OBJECTIVE", 1.5, Color3.fromRGB(255, 100, 100))
+            end
+        end
+    elseif payload.type == "Dropped" then
+        if payload.by == Players.LocalPlayer.UserId then
+            isCarrier = false
+        end
+        animateToast("📦 OBJECTIVE DROPPED", 1.5, Color3.fromRGB(200, 200, 100))
+    elseif payload.type == "Stolen" then
+        if payload.by == Players.LocalPlayer.UserId then
+            isCarrier = true
+            animateToast("⚡ STOLEN - RUN!", 2.5, Color3.fromRGB(255, 100, 50))
+        elseif payload.from == Players.LocalPlayer.UserId then
+            isCarrier = false
+            animateToast("❌ STOLEN FROM YOU", 2, Color3.fromRGB(255, 50, 50))
+        else
+            animateToast("🔄 OBJECTIVE STOLEN", 2, Color3.fromRGB(255, 150, 50))
+        end
+    end
+end
+
+if Events.RoundChanged then Events.RoundChanged.OnClientEvent:Connect(onRoundChanged) end
+if Events.Objective then Events.Objective.OnClientEvent:Connect(onObjectiveEvent) end
+
+-- React to team changes
+Players.LocalPlayer:GetPropertyChangedSignal("Team"):Connect(updatePanel)
+
+-- Update panel
+RunService.RenderStepped:Connect(function()
+    updatePanel()
+end)</string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+</roblox>
