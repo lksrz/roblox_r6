@@ -11,6 +11,7 @@ end
 
 local interval = 0.2
 local boardKey = Enum.KeyCode.E
+local kickKey = Enum.KeyCode.Q
 do
     local ok, ConfigLoader = pcall(function() return require(ReplicatedStorage.Shared.ConfigLoader) end)
     if ok then
@@ -21,6 +22,9 @@ do
             end
             if cfg.CONSTRUCTION.BOARDUP.KeyCode then
                 boardKey = cfg.CONSTRUCTION.BOARDUP.KeyCode
+            end
+            if cfg.CONSTRUCTION.DESTROY and cfg.CONSTRUCTION.DESTROY.KeyCode then
+                kickKey = cfg.CONSTRUCTION.DESTROY.KeyCode
             end
         end
     end
@@ -77,13 +81,25 @@ UIS.InputEnded:Connect(function(input)
 end)
 
 RunService.Heartbeat:Connect(function(dt)
-    if not (activePrompt and activePrompt.Parent and activePrompt.Enabled and keyHeld and Events and Events.BoardUp) then
+    if not (activePrompt and activePrompt.Parent and activePrompt.Enabled) then
         holdAccum = 0
         return
     end
-    holdAccum += dt
-    if holdAccum >= interval then
-        holdAccum -= interval
-        Events.BoardUp:FireServer(activePrompt.Parent)
+    -- Build action while E is held (only when the visible prompt is NOT Kick)
+    if keyHeld and Events and Events.BoardUp and (activePrompt.Name ~= "KickPrompt") then
+        holdAccum += dt
+        if holdAccum >= interval then
+            holdAccum -= interval
+            Events.BoardUp:FireServer(activePrompt.Parent)
+        end
+    end
+end)
+
+-- Kick action on key press (single; strong when Shift + Key)
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == kickKey and activePrompt and activePrompt.Enabled and Events and Events.BoardKick then
+        local strong = UIS:IsKeyDown(Enum.KeyCode.LeftShift) or UIS:IsKeyDown(Enum.KeyCode.RightShift)
+        Events.BoardKick:FireServer(activePrompt.Parent, strong)
     end
 end)

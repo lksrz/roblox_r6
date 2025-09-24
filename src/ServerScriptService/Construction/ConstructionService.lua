@@ -108,6 +108,7 @@ local function buildProceduralAt(origin: CFrame)
             Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0, FloorOffset = 0.5 },
             Debug = { Print = true, VisualizeRects = false, Randomize = true },
             BOARDUP = { PlankWidth = 1.5, PlankThickness = 0.2, Hold = 0.2, MaxBoardsPerOpening = 24, MaxPerMinute = 30, KeyCode = Enum.KeyCode.E, Distance = 12, Material = Enum.Material.WoodPlanks, Color = Color3.fromRGB(155,120,80) },
+            DESTROY = { KeyCode = Enum.KeyCode.Q, Cooldown = 0.25, MaxPerMinute = 60, Distance = 12, DoubleBreakChance = 0.25, StrongBreakMax = 4, Shake = { Mag = 0.5, Duration = 0.12 } },
         }
     end
 
@@ -225,7 +226,7 @@ local function buildProceduralAt(origin: CFrame)
     -- Attach board-up interactions
     pcall(function()
         local BoardUp = require(script.Parent:WaitForChild("BoardUpService"))
-        BoardUp.Attach(model, buildCfg.BOARDUP or {})
+        BoardUp.Attach(model, buildCfg.BOARDUP or {}, buildCfg.DESTROY or {})
     end)
 end
 

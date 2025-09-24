@@ -43,6 +43,40 @@ local function setPromptEnabled(proxy: BasePart, enabled: boolean)
     end
 end
 
+local function ensureKickPrompt(proxy: BasePart, cfg)
+    local prompt = proxy:FindFirstChild("KickPrompt")
+    if not prompt then
+        prompt = Instance.new("ProximityPrompt")
+        prompt.Name = "KickPrompt"
+        prompt.ActionText = "Kick"
+        prompt.ObjectText = "Boards"
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        prompt.Parent = proxy
+    end
+    prompt.KeyboardKeyCode = (cfg and cfg.KeyCode) or Enum.KeyCode.Q
+    prompt.MaxActivationDistance = (cfg and cfg.Distance) or 12
+    return prompt
+end
+
+local function updatePrompts(proxy: BasePart, buildCfg, destroyCfg)
+    local boardPrompt = proxy:FindFirstChildOfClass("ProximityPrompt")
+    if boardPrompt then
+        boardPrompt.KeyboardKeyCode = (buildCfg and buildCfg.KeyCode) or DEFAULT.KeyCode
+        boardPrompt.HoldDuration = (buildCfg and buildCfg.Hold) or DEFAULT.Hold
+        boardPrompt.MaxActivationDistance = (buildCfg and buildCfg.Distance) or DEFAULT.Distance
+    end
+    local N, current = computeQuota(proxy, getCfg(buildCfg))
+    local kickPrompt = ensureKickPrompt(proxy, destroyCfg)
+    -- Show only one prompt at a time:
+    -- - Board Up when not fully sealed (current < N)
+    -- - Kick only when fully sealed (current == N)
+    local showKick = (current >= N and N > 0)
+    local showBoard = (current < N)
+    if boardPrompt then boardPrompt.Enabled = showBoard end
+    kickPrompt.Enabled = showKick
+end
+
 local function countChildren(folder)
     local n = 0
     for _, _ in ipairs(folder:GetChildren()) do n += 1 end
@@ -52,7 +86,7 @@ end
 -- per-proxy per-player last time stamp to enforce hold build time
 local lastAt: { [Instance]: { [number]: number } } = {}
 
-local function placeBoard(player: Player, proxy: BasePart, cfg)
+local function placeBoard(player: Player, proxy: BasePart, cfg, destroyCfg)
     if not player or not player.Parent then return end
     cfg = getCfg(cfg)
     local minPerMinute = math.max(cfg.MaxPerMinute or 0, math.floor(60 / math.max(0.05, cfg.Hold)) + 5)
@@ -107,38 +141,105 @@ local function placeBoard(player: Player, proxy: BasePart, cfg)
     plank.Parent = boards
 
     if idx + 1 >= N then setPromptEnabled(proxy, false) end
+    updatePrompts(proxy, cfg, destroyCfg)
 end
 
-function BoardUpService.Attach(model: Model, cfg)
+-- Knock down one random board with fun effects
+local lastKick: { [Instance]: { [number]: number } } = {}
+
+local function kickBoard(player: Player, proxy: BasePart, cfg, destroyCfg, strong: boolean?)
+    cfg = getCfg(cfg)
+    destroyCfg = destroyCfg or {}
+    local perMinute = (destroyCfg.MaxPerMinute or 60)
+    if not RateLimiter.Allow(player, "BOARDKICK", perMinute) then return end
+    -- Cooldown per opening per player
+    local cd = destroyCfg.Cooldown or 0.25
+    lastKick[proxy] = lastKick[proxy] or {}
+    local now = os.clock()
+    local last = lastKick[proxy][player.UserId] or 0
+    if now - last < cd then return end
+    lastKick[proxy][player.UserId] = now
+    -- distance validation
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not (hrp and hrp:IsA("BasePart")) then return end
+    local dist = (hrp.Position - proxy.Position).Magnitude
+    if dist > ((destroyCfg.Distance or 12) + 2) then return end
+
+    local boards = proxy:FindFirstChild("Boards")
+    if not boards then return end
+    local children = boards:GetChildren()
+    if #children == 0 then return end
+
+    local toBreak = 1
+    if strong then
+        toBreak = math.min(destroyCfg.StrongBreakMax or 4, math.max(1, math.random(2, 3)))
+    elseif math.random() < (destroyCfg.DoubleBreakChance or 0) then
+        toBreak = 2
+    end
+
+    local eventsOk, Events = pcall(function() return require(game.ReplicatedStorage.Net.Events) end)
+    local Debris = game:GetService("Debris")
+
+    for i = 1, toBreak do
+        local list = boards:GetChildren()
+        if #list == 0 then break end
+        local pick = list[math.random(1, #list)]
+        if pick and pick:IsA("BasePart") then
+            if eventsOk and Events and Events.BoardFX then
+                Events.BoardFX:FireAllClients({ kind = "Kick", pos = pick.Position, mag = (destroyCfg.Shake and destroyCfg.Shake.Mag) or 0.4, dur = (destroyCfg.Shake and destroyCfg.Shake.Duration) or 0.1 })
+            end
+            pick.Parent = workspace
+            pick.CanCollide = false
+            pick.Anchored = false
+            pick.AssemblyLinearVelocity = Vector3.new((math.random()-0.5)*28, 18 + math.random()*10, (math.random()-0.5)*28)
+            pick.AssemblyAngularVelocity = Vector3.new(math.random(), math.random(), math.random()) * 8
+            Debris:AddItem(pick, 1.6)
+        end
+    end
+
+    updatePrompts(proxy, cfg, destroyCfg)
+end
+
+function BoardUpService.Attach(model: Model, cfg, destroyCfg)
     if not (model and model.Parent) then return end
     local openings = model:FindFirstChild("Openings")
     if not openings then return end
 
     -- Hook remote for hold-to-board behavior
     local eventsOk, Events = pcall(function() return require(game.ReplicatedStorage.Net.Events) end)
-    if eventsOk and Events and Events.BoardUp then
-        Events.BoardUp.OnServerEvent:Connect(function(player, proxy)
-            if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
-                placeBoard(player, proxy, cfg)
+        if eventsOk and Events then
+            Events.BoardUp.OnServerEvent:Connect(function(player, proxy)
+                if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
+                placeBoard(player, proxy, cfg, destroyCfg)
+                end
+            end)
+            if Events.BoardKick then
+                Events.BoardKick.OnServerEvent:Connect(function(player, proxy, strong)
+                    if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
+                        kickBoard(player, proxy, cfg, destroyCfg, strong == true)
+                    end
+                end)
             end
-        end)
-    end
+        end
 
     for _, proxy in ipairs(openings:GetChildren()) do
         if proxy:IsA("BasePart") then
             local prompt = proxy:FindFirstChildOfClass("ProximityPrompt")
             if prompt then
-                prompt.KeyboardKeyCode = (cfg and cfg.KeyCode) or DEFAULT.KeyCode
-                prompt.HoldDuration = (cfg and cfg.Hold) or DEFAULT.Hold
-                prompt.MaxActivationDistance = (cfg and cfg.Distance) or DEFAULT.Distance
-                -- Disable prompt if opening already sealed
-                local N, current = computeQuota(proxy, getCfg(cfg))
-                if current >= N then setPromptEnabled(proxy, false) end
-                -- Ensure a board is placed when a full hold completes (single-step)
+                -- Primary board prompt is already on the proxy (created in generator)
+                -- Configure it and add fallback Triggered handler
+                prompt.ActionText = "Board Up"
+                prompt.RequiresLineOfSight = false
                 prompt.Triggered:Connect(function(player)
-                    placeBoard(player, proxy, cfg)
+                    placeBoard(player, proxy, cfg, destroyCfg)
                 end)
             end
+            -- Kick prompt
+            local kp = ensureKickPrompt(proxy, destroyCfg)
+            kp.Triggered:Connect(function(player)
+                kickBoard(player, proxy, cfg, destroyCfg)
+            end)
+            updatePrompts(proxy, cfg, destroyCfg)
         end
     end
 end

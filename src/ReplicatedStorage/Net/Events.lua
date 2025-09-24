@@ -39,6 +39,8 @@ Events.Objective = ensure("ObjectiveEvent", "RemoteEvent")
 -- Construction/building requests
 Events.Construction = ensure("ConstructionRequest", "RemoteEvent")
 Events.BoardUp = ensure("BoardUpRequest", "RemoteEvent")
+Events.BoardKick = ensure("BoardKickRequest", "RemoteEvent")
+Events.BoardFX = ensure("BoardFX", "RemoteEvent")
 -- Debug/minimap update
 Events.ConstructionMap = ensure("ConstructionMap", "RemoteEvent")
 

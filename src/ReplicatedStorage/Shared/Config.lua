@@ -109,6 +109,16 @@ local Config = {
             Material = Enum.Material.WoodPlanks,
             Color = Color3.fromRGB(155, 120, 80),
         },
+
+        DESTROY = {
+            KeyCode = Enum.KeyCode.Q,
+            Cooldown = 0.25,
+            MaxPerMinute = 60,
+            Distance = 12,
+            DoubleBreakChance = 0.25,
+            StrongBreakMax = 4, -- max boards removed on a strong kick
+            Shake = { Mag = 0.5, Duration = 0.12 },
+        },
     },
 }
 
