@@ -1,16 +1,2161 @@
-<roblox version="4">
-  <Item class="ReplicatedStorage" referent="0">
-    <Properties>
-      <string name="Name">ReplicatedStorage</string>
-    </Properties>
-    <Item class="Folder" referent="1">
-      <Properties>
-        <string name="Name">Construction</string>
-      </Properties>
-      <Item class="ModuleScript" referent="2">
-        <Properties>
-          <string name="Name">Generator</string>
-          <string name="Source"><![CDATA[-- Construction.Generator: Procedural building generator (rooms, corridors, walls, doors, windows)
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<External>null</External>
+	<External>nil</External>
+	<Item class="Workspace" referent="RBX6a30744f7a23434cb37efa485397b506">
+		<Properties>
+			<float name="AirDensity">0.00120000006</float>
+			<float name="AirTurbulenceIntensity">0</float>
+			<bool name="AllowThirdPartySales">false</bool>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<token name="AuthorityMode">1</token>
+			<token name="AvatarUnificationMode">0</token>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<token name="ClientAnimatorThrottling">0</token>
+			<BinaryString name="CollisionGroupData">AQEABP////8HRGVmYXVsdA==</BinaryString>
+			<Ref name="CurrentCamera">RBX58846096d2344ff59c4d56d80b0b9fe5</Ref>
+			<bool name="DefinesCapabilities">false</bool>
+			<double name="DistributedGameTime">0</double>
+			<bool name="ExplicitAutoJoints">true</bool>
+			<bool name="FallHeightEnabled">true</bool>
+			<float name="FallenPartsDestroyHeight">-500</float>
+			<token name="FluidForces">0</token>
+			<Vector3 name="GlobalWind">
+				<X>0</X>
+				<Y>0</Y>
+				<Z>0</Z>
+			</Vector3>
+			<float name="Gravity">196.199997</float>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<token name="IKControlConstraintSupport">0</token>
+			<token name="LevelOfDetail">0</token>
+			<token name="LuauTypeCheckMode">0</token>
+			<token name="MeshPartHeadsAndAccessories">0</token>
+			<CoordinateFrame name="ModelMeshCFrame">
+				<X>0</X>
+				<Y>0</Y>
+				<Z>0</Z>
+				<R00>1</R00>
+				<R01>0</R01>
+				<R02>0</R02>
+				<R10>0</R10>
+				<R11>1</R11>
+				<R12>0</R12>
+				<R20>0</R20>
+				<R21>0</R21>
+				<R22>1</R22>
+			</CoordinateFrame>
+			<SharedString name="ModelMeshData">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+			<Vector3 name="ModelMeshSize">
+				<X>0</X>
+				<Y>0</Y>
+				<Z>0</Z>
+			</Vector3>
+			<token name="ModelStreamingBehavior">0</token>
+			<token name="ModelStreamingMode">0</token>
+			<token name="MoverConstraintRootBehavior">0</token>
+			<string name="Name">Workspace</string>
+			<bool name="NeedsPivotMigration">false</bool>
+			<token name="PathfindingUseImprovedSearch">0</token>
+			<token name="PhysicsImprovedSleep">0</token>
+			<token name="PhysicsSteppingMethod">0</token>
+			<token name="PlayerCharacterDestroyBehavior">0</token>
+			<token name="PrimalPhysicsSolver">0</token>
+			<Ref name="PrimaryPart">null</Ref>
+			<token name="RejectCharacterDeletions">0</token>
+			<token name="RenderingCacheOptimizations">0</token>
+			<token name="ReplicateInstanceDestroySetting">0</token>
+			<token name="Retargeting">0</token>
+			<token name="SandboxedInstanceMode">0</token>
+			<float name="ScaleFactor">1</float>
+			<token name="SignalBehavior2">0</token>
+			<int64 name="SourceAssetId">-1</int64>
+			<token name="StreamOutBehavior">0</token>
+			<bool name="StreamingEnabled">false</bool>
+			<token name="StreamingIntegrityMode">0</token>
+			<int name="StreamingMinRadius">64</int>
+			<int name="StreamingTargetRadius">1024</int>
+			<BinaryString name="Tags"></BinaryString>
+			<bool name="TerrainWeldsFixed">true</bool>
+			<token name="TouchEventsUseCollisionGroups">0</token>
+			<bool name="TouchesUseCollisionGroups">false</bool>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00003da9</UniqueId>
+			<token name="UseImprovedModelLod">0</token>
+			<token name="UseNewLuauTypeSolver">0</token>
+			<OptionalCoordinateFrame name="WorldPivotData">
+				<CFrame>
+					<X>0</X>
+					<Y>0</Y>
+					<Z>0</Z>
+					<R00>1</R00>
+					<R01>0</R01>
+					<R02>0</R02>
+					<R10>0</R10>
+					<R11>1</R11>
+					<R12>0</R12>
+					<R20>0</R20>
+					<R21>0</R21>
+					<R22>1</R22>
+				</CFrame>
+			</OptionalCoordinateFrame>
+		</Properties>
+		<Item class="Camera" referent="RBX58846096d2344ff59c4d56d80b0b9fe5">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<CoordinateFrame name="CFrame">
+					<X>0</X>
+					<Y>20</Y>
+					<Z>20</Z>
+					<R00>1</R00>
+					<R01>0</R01>
+					<R02>-0</R02>
+					<R10>-0</R10>
+					<R11>0.780868828</R11>
+					<R12>0.624695063</R12>
+					<R20>0</R20>
+					<R21>-0.624695063</R21>
+					<R22>0.780868828</R22>
+				</CoordinateFrame>
+				<Ref name="CameraSubject">null</Ref>
+				<token name="CameraType">0</token>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<float name="FieldOfView">70</float>
+				<token name="FieldOfViewMode">0</token>
+				<CoordinateFrame name="Focus">
+					<X>0</X>
+					<Y>0</Y>
+					<Z>-5</Z>
+					<R00>1</R00>
+					<R01>0</R01>
+					<R02>0</R02>
+					<R10>0</R10>
+					<R11>1</R11>
+					<R12>0</R12>
+					<R20>0</R20>
+					<R21>0</R21>
+					<R22>1</R22>
+				</CoordinateFrame>
+				<bool name="HeadLocked">true</bool>
+				<float name="HeadScale">1</float>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Camera</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004116</UniqueId>
+				<bool name="VRTiltAndRollEnabled">false</bool>
+			</Properties>
+		</Item>
+		<Item class="Terrain" referent="RBX23627fa76cf241c3b1fe5213179327c6">
+			<Properties>
+				<token name="AcquisitionMethod">0</token>
+				<bool name="Anchored">true</bool>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<bool name="AudioCanCollide">true</bool>
+				<float name="BackParamA">-0.5</float>
+				<float name="BackParamB">0.5</float>
+				<token name="BackSurface">0</token>
+				<token name="BackSurfaceInput">0</token>
+				<float name="BottomParamA">-0.5</float>
+				<float name="BottomParamB">0.5</float>
+				<token name="BottomSurface">4</token>
+				<token name="BottomSurfaceInput">0</token>
+				<CoordinateFrame name="CFrame">
+					<X>0</X>
+					<Y>0</Y>
+					<Z>0</Z>
+					<R00>1</R00>
+					<R01>0</R01>
+					<R02>0</R02>
+					<R10>0</R10>
+					<R11>1</R11>
+					<R12>0</R12>
+					<R20>0</R20>
+					<R21>0</R21>
+					<R22>1</R22>
+				</CoordinateFrame>
+				<bool name="CanCollide">true</bool>
+				<bool name="CanQuery">true</bool>
+				<bool name="CanTouch">true</bool>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="CastShadow">true</bool>
+				<string name="CollisionGroup">Default</string>
+				<int name="CollisionGroupId">0</int>
+				<Color3uint8 name="Color3uint8">4288914085</Color3uint8>
+				<PhysicalProperties name="CustomPhysicalProperties">
+					<CustomPhysics>false</CustomPhysics>
+				</PhysicalProperties>
+				<bool name="Decoration">false</bool>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="EnableFluidForces">true</bool>
+				<float name="FrontParamA">-0.5</float>
+				<float name="FrontParamB">0.5</float>
+				<token name="FrontSurface">0</token>
+				<token name="FrontSurfaceInput">0</token>
+				<float name="GrassLength">0.699999988</float>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<float name="LeftParamA">-0.5</float>
+				<float name="LeftParamB">0.5</float>
+				<token name="LeftSurface">0</token>
+				<token name="LeftSurfaceInput">0</token>
+				<bool name="Locked">true</bool>
+				<bool name="Massless">false</bool>
+				<token name="Material">256</token>
+				<BinaryString name="MaterialColors"><![CDATA[AAAAAAAAan8/P39rf2Y/ilY+j35fi21PZmxvZbDqw8faiVpHOi4kHh4lZlw76JxKc3trhHta
+gcLgc4RKxr21zq2UlJSM]]></BinaryString>
+				<string name="MaterialVariantSerialized"></string>
+				<string name="Name">Terrain</string>
+				<BinaryString name="PhysicsGrid">AgMAAAAAAAAAAAAAAAA=</BinaryString>
+				<CoordinateFrame name="PivotOffset">
+					<X>0</X>
+					<Y>0</Y>
+					<Z>0</Z>
+					<R00>1</R00>
+					<R01>0</R01>
+					<R02>0</R02>
+					<R10>0</R10>
+					<R11>1</R11>
+					<R12>0</R12>
+					<R20>0</R20>
+					<R21>0</R21>
+					<R22>1</R22>
+				</CoordinateFrame>
+				<float name="Reflectance">0</float>
+				<float name="RightParamA">-0.5</float>
+				<float name="RightParamB">0.5</float>
+				<token name="RightSurface">0</token>
+				<token name="RightSurfaceInput">0</token>
+				<int name="RootPriority">0</int>
+				<Vector3 name="RotVelocity">
+					<X>0</X>
+					<Y>0</Y>
+					<Z>0</Z>
+				</Vector3>
+				<BinaryString name="SmoothGrid">AQU=</BinaryString>
+				<bool name="SmoothVoxelsUpgraded">false</bool>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<float name="TopParamA">-0.5</float>
+				<float name="TopParamB">0.5</float>
+				<token name="TopSurface">3</token>
+				<token name="TopSurfaceInput">0</token>
+				<float name="Transparency">0</float>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004164</UniqueId>
+				<Vector3 name="Velocity">
+					<X>0</X>
+					<Y>0</Y>
+					<Z>0</Z>
+				</Vector3>
+				<Color3 name="WaterColor">
+					<R>0.0500000007</R>
+					<G>0.330000013</G>
+					<B>0.360000014</B>
+				</Color3>
+				<float name="WaterReflectance">1</float>
+				<float name="WaterTransparency">0.300000012</float>
+				<float name="WaterWaveSize">0.150000006</float>
+				<float name="WaterWaveSpeed">10</float>
+				<Vector3 name="size">
+					<X>2044</X>
+					<Y>252</Y>
+					<Z>2044</Z>
+				</Vector3>
+			</Properties>
+		</Item>
+	</Item>
+	<Item class="TimerService" referent="RBX828cc56a5bf44fd3a61ef6f1efcf6c85">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">TimerService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040ce</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="SoundService" referent="RBXc9e0163784434fb4b3f4d219940cdc76">
+		<Properties>
+			<bool name="AcousticSimulationEnabled">false</bool>
+			<token name="AmbientReverb">0</token>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<token name="AudioApiByDefault">0</token>
+			<token name="AudioPlayerVolumeFix">0</token>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<token name="CharacterSoundsUseNewApi">0</token>
+			<token name="DefaultListenerLocation">0</token>
+			<bool name="DefinesCapabilities">false</bool>
+			<float name="DistanceFactor">3.32999992</float>
+			<float name="DopplerScale">1</float>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="IsNewExpForAudioApiByDefault">false</bool>
+			<string name="Name">SoundService</string>
+			<bool name="RespectFilteringEnabled">false</bool>
+			<float name="RolloffScale">1</float>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040cf</UniqueId>
+			<token name="VolumetricAudio">1</token>
+		</Properties>
+	</Item>
+	<Item class="VideoCaptureService" referent="RBXa778f1aea8b444ad87bc96a20f6b7d79">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">VideoCaptureService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040db</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="NonReplicatedCSGDictionaryService" referent="RBX653a49eaaafa40e68b47b1fe35dd745f">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">NonReplicatedCSGDictionaryService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040dc</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="CSGDictionaryService" referent="RBX072b8ce3d2ed4ab88e3b2971888211a6">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">CSGDictionaryService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040dd</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="Chat" referent="RBX9f591ed39ecc410985762ebcf06c6172">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<bool name="BubbleChatEnabled">false</bool>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="IsAutoMigrated">false</bool>
+			<bool name="LoadDefaultChat">true</bool>
+			<string name="Name">Chat</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040e3</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="Players" referent="RBX0d3a159732e7449db3128894a3301d9b">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<bool name="BanningEnabled">true</bool>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="CharacterAutoLoads">true</bool>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<int name="MaxPlayersInternal">12</int>
+			<string name="Name">Players</string>
+			<int name="PreferredPlayersInternal">0</int>
+			<float name="RespawnTime">5</float>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040e5</UniqueId>
+			<bool name="UseStrafingAnimations">false</bool>
+		</Properties>
+	</Item>
+	<Item class="ReplicatedFirst" referent="RBX8f4a1eba86444cbd881e0dca907153a7">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ReplicatedFirst</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040e8</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="TweenService" referent="RBX5d09dbe3fcad49e79e6e22ae2157c66c">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">TweenService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040ea</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="MaterialService" referent="RBXbf1b22988b06481dab46f09d71ffcd72">
+		<Properties>
+			<string name="AsphaltName">Asphalt</string>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<string name="BasaltName">Basalt</string>
+			<string name="BrickName">Brick</string>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<string name="CardboardName">Cardboard</string>
+			<string name="CarpetName">Carpet</string>
+			<string name="CeramicTilesName">CeramicTiles</string>
+			<string name="ClayRoofTilesName">ClayRoofTiles</string>
+			<string name="CobblestoneName">Cobblestone</string>
+			<string name="ConcreteName">Concrete</string>
+			<string name="CorrodedMetalName">CorrodedMetal</string>
+			<string name="CrackedLavaName">CrackedLava</string>
+			<bool name="DefinesCapabilities">false</bool>
+			<string name="DiamondPlateName">DiamondPlate</string>
+			<string name="FabricName">Fabric</string>
+			<string name="FoilName">Foil</string>
+			<string name="GlacierName">Glacier</string>
+			<string name="GraniteName">Granite</string>
+			<string name="GrassName">Grass</string>
+			<string name="GroundName">Ground</string>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="IceName">Ice</string>
+			<string name="LeafyGrassName">LeafyGrass</string>
+			<string name="LeatherName">Leather</string>
+			<string name="LimestoneName">Limestone</string>
+			<string name="MarbleName">Marble</string>
+			<string name="MetalName">Metal</string>
+			<string name="MudName">Mud</string>
+			<string name="Name">MaterialService</string>
+			<string name="PavementName">Pavement</string>
+			<string name="PebbleName">Pebble</string>
+			<string name="PlasterName">Plaster</string>
+			<string name="PlasticName">Plastic</string>
+			<string name="RockName">Rock</string>
+			<string name="RoofShinglesName">RoofShingles</string>
+			<string name="RubberName">Rubber</string>
+			<string name="SaltName">Salt</string>
+			<string name="SandName">Sand</string>
+			<string name="SandstoneName">Sandstone</string>
+			<string name="SlateName">Slate</string>
+			<string name="SmoothPlasticName">SmoothPlastic</string>
+			<string name="SnowName">Snow</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040eb</UniqueId>
+			<bool name="Use2022MaterialsXml">false</bool>
+			<string name="WoodName">Wood</string>
+			<string name="WoodPlanksName">WoodPlanks</string>
+		</Properties>
+	</Item>
+	<Item class="TextChatService" referent="RBX32873f2b7b584da39e069d6233e949b8">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="ChatTranslationFTUXShown">true</bool>
+			<bool name="ChatTranslationToggleEnabled">false</bool>
+			<token name="ChatVersion">0</token>
+			<bool name="CreateDefaultCommands">true</bool>
+			<bool name="CreateDefaultTextChannels">true</bool>
+			<bool name="DefinesCapabilities">false</bool>
+			<bool name="HasSeenDeprecationDialog">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="IsLegacyChatDisabled">false</bool>
+			<string name="Name">TextChatService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040ec</UniqueId>
+		</Properties>
+		<Item class="ChatWindowConfiguration" referent="RBX6b8d8418eacf4d39bd04a9472cfd082a">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<Color3 name="BackgroundColor3">
+					<R>0.0980392173</R>
+					<G>0.105882354</G>
+					<B>0.113725491</B>
+				</Color3>
+				<double name="BackgroundTransparency">0.2999999999999999889</double>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Enabled">true</bool>
+				<Font name="FontFace">
+					<Family><url>rbxasset://fonts/families/GothamSSm.json</url></Family>
+					<Weight>500</Weight>
+					<Style>Normal</Style>
+					<CachedFaceId><url>rbxasset://fonts/Montserrat-Medium.ttf</url></CachedFaceId>
+				</Font>
+				<float name="HeightScale">1</float>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<token name="HorizontalAlignment">1</token>
+				<string name="Name">ChatWindowConfiguration</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<Color3 name="TextColor3">
+					<R>1</R>
+					<G>1</G>
+					<B>1</B>
+				</Color3>
+				<int64 name="TextSize">14</int64>
+				<Color3 name="TextStrokeColor3">
+					<R>0</R>
+					<G>0</G>
+					<B>0</B>
+				</Color3>
+				<double name="TextStrokeTransparency">0.5</double>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004165</UniqueId>
+				<token name="VerticalAlignment">1</token>
+				<float name="WidthScale">1</float>
+			</Properties>
+		</Item>
+		<Item class="ChatInputBarConfiguration" referent="RBX5a03a5bb54fa46d9a0a02af127973a7e">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<bool name="AutocompleteEnabled">true</bool>
+				<Color3 name="BackgroundColor3">
+					<R>0.0980392173</R>
+					<G>0.105882354</G>
+					<B>0.113725491</B>
+				</Color3>
+				<double name="BackgroundTransparency">0.2000000000000000111</double>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Enabled">true</bool>
+				<Font name="FontFace">
+					<Family><url>rbxasset://fonts/families/GothamSSm.json</url></Family>
+					<Weight>500</Weight>
+					<Style>Normal</Style>
+					<CachedFaceId><url>rbxasset://fonts/Montserrat-Medium.ttf</url></CachedFaceId>
+				</Font>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<token name="KeyboardKeyCode">47</token>
+				<string name="Name">ChatInputBarConfiguration</string>
+				<Color3 name="PlaceholderColor3">
+					<R>0.698039234</R>
+					<G>0.698039234</G>
+					<B>0.698039234</B>
+				</Color3>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<Ref name="TargetTextChannel">null</Ref>
+				<Color3 name="TextColor3">
+					<R>1</R>
+					<G>1</G>
+					<B>1</B>
+				</Color3>
+				<int64 name="TextSize">14</int64>
+				<Color3 name="TextStrokeColor3">
+					<R>0</R>
+					<G>0</G>
+					<B>0</B>
+				</Color3>
+				<double name="TextStrokeTransparency">0.5</double>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004166</UniqueId>
+			</Properties>
+		</Item>
+		<Item class="BubbleChatConfiguration" referent="RBX40998e3e98774fa18aa9b01efbf7f271">
+			<Properties>
+				<string name="AdorneeName">HumanoidRootPart</string>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<Color3 name="BackgroundColor3">
+					<R>0.980392158</R>
+					<G>0.980392158</G>
+					<B>0.980392158</B>
+				</Color3>
+				<double name="BackgroundTransparency">0.10000000000000000555</double>
+				<float name="BubbleDuration">15</float>
+				<float name="BubblesSpacing">6</float>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Enabled">true</bool>
+				<token name="Font">18</token>
+				<Font name="FontFace">
+					<Family><url>rbxasset://fonts/families/GothamSSm.json</url></Family>
+					<Weight>500</Weight>
+					<Style>Normal</Style>
+					<CachedFaceId><url>rbxasset://fonts/Montserrat-Medium.ttf</url></CachedFaceId>
+				</Font>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<Vector3 name="LocalPlayerStudsOffset">
+					<X>0</X>
+					<Y>0</Y>
+					<Z>0</Z>
+				</Vector3>
+				<float name="MaxBubbles">3</float>
+				<float name="MaxDistance">100</float>
+				<float name="MinimizeDistance">40</float>
+				<string name="Name">BubbleChatConfiguration</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<bool name="TailVisible">true</bool>
+				<Color3 name="TextColor3">
+					<R>0.223529413</R>
+					<G>0.23137255</G>
+					<B>0.239215687</B>
+				</Color3>
+				<int64 name="TextSize">16</int64>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004167</UniqueId>
+				<float name="VerticalStudsOffset">0</float>
+			</Properties>
+		</Item>
+		<Item class="ChannelTabsConfiguration" referent="RBX2d13b5ae0c61440f97af947c10301e3c">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<Color3 name="BackgroundColor3">
+					<R>0.0980392173</R>
+					<G>0.105882354</G>
+					<B>0.113725491</B>
+				</Color3>
+				<double name="BackgroundTransparency">0</double>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Enabled">false</bool>
+				<Font name="FontFace">
+					<Family><url>rbxasset://fonts/families/BuilderSans.json</url></Family>
+					<Weight>700</Weight>
+					<Style>Normal</Style>
+					<CachedFaceId><url>rbxasset://fonts/BuilderSans-Bold.otf</url></CachedFaceId>
+				</Font>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<Color3 name="HoverBackgroundColor3">
+					<R>0.490196079</R>
+					<G>0.490196079</G>
+					<B>0.490196079</B>
+				</Color3>
+				<string name="Name">ChannelTabsConfiguration</string>
+				<Color3 name="SelectedTabTextColor3">
+					<R>1</R>
+					<G>1</G>
+					<B>1</B>
+				</Color3>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<Color3 name="TextColor3">
+					<R>0.686274529</R>
+					<G>0.686274529</G>
+					<B>0.686274529</B>
+				</Color3>
+				<int64 name="TextSize">18</int64>
+				<Color3 name="TextStrokeColor3">
+					<R>0</R>
+					<G>0</G>
+					<B>0</B>
+				</Color3>
+				<double name="TextStrokeTransparency">1</double>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004168</UniqueId>
+			</Properties>
+		</Item>
+	</Item>
+	<Item class="PermissionsService" referent="RBX9aa2cd7971984ced810e7c38fe856b89">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">PermissionsService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040ee</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="PlayerEmulatorService" referent="RBXc0eceab8ab91468a90e860eedcfd81e9">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="CustomPoliciesEnabled">false</bool>
+			<bool name="DefinesCapabilities">false</bool>
+			<string name="EmulatedCountryCode"></string>
+			<string name="EmulatedGameLocale"></string>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">PlayerEmulatorService</string>
+			<bool name="PlayerEmulationEnabled">false</bool>
+			<bool name="PseudolocalizationEnabled">false</bool>
+			<BinaryString name="SerializedEmulatedPolicyInfo"></BinaryString>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<int name="TextElongationFactor">0</int>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040ef</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="StudioData" referent="RBXd405e90451a14ed79a0d15dbb2009577">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<bool name="EnableScriptCollabByDefaultOnLoad">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">StudioData</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040f3</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="StarterPlayer" referent="23">
+		<Properties>
+			<bool name="AllowCustomAnimations">true</bool>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<bool name="AutoJumpEnabled">true</bool>
+			<token name="AvatarJointUpgrade_SerializedRollout">0</token>
+			<float name="CameraMaxZoomDistance">400</float>
+			<float name="CameraMinZoomDistance">0.5</float>
+			<token name="CameraMode">0</token>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<float name="CharacterJumpHeight">7.19999981</float>
+			<float name="CharacterJumpPower">50</float>
+			<float name="CharacterMaxSlopeAngle">89</float>
+			<bool name="CharacterUseJumpPower">true</bool>
+			<float name="CharacterWalkSpeed">16</float>
+			<bool name="ClassicDeath">true</bool>
+			<bool name="DefinesCapabilities">false</bool>
+			<token name="DevCameraOcclusionMode">0</token>
+			<token name="DevComputerCameraMovementMode">0</token>
+			<token name="DevComputerMovementMode">0</token>
+			<token name="DevTouchCameraMovementMode">0</token>
+			<token name="DevTouchMovementMode">0</token>
+			<token name="EnableDynamicHeads">0</token>
+			<bool name="EnableMouseLockOption">true</bool>
+			<int64 name="GameSettingsAssetIDFace">0</int64>
+			<int64 name="GameSettingsAssetIDHead">0</int64>
+			<int64 name="GameSettingsAssetIDLeftArm">0</int64>
+			<int64 name="GameSettingsAssetIDLeftLeg">0</int64>
+			<int64 name="GameSettingsAssetIDPants">0</int64>
+			<int64 name="GameSettingsAssetIDRightArm">0</int64>
+			<int64 name="GameSettingsAssetIDRightLeg">0</int64>
+			<int64 name="GameSettingsAssetIDShirt">0</int64>
+			<int64 name="GameSettingsAssetIDTeeShirt">0</int64>
+			<int64 name="GameSettingsAssetIDTorso">0</int64>
+			<token name="GameSettingsAvatar">1</token>
+			<token name="GameSettingsR15Collision">0</token>
+			<NumberRange name="GameSettingsScaleRangeBodyType">0 1 </NumberRange>
+			<NumberRange name="GameSettingsScaleRangeHead">0.95 1 </NumberRange>
+			<NumberRange name="GameSettingsScaleRangeHeight">0.9 1.05 </NumberRange>
+			<NumberRange name="GameSettingsScaleRangeProportion">0 1 </NumberRange>
+			<NumberRange name="GameSettingsScaleRangeWidth">0.7 1 </NumberRange>
+			<float name="HealthDisplayDistance">100</float>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="LoadCharacterAppearance">true</bool>
+			<token name="LoadCharacterLayeredClothing">0</token>
+			<token name="LuaCharacterController">0</token>
+			<string name="Name">StarterPlayer</string>
+			<float name="NameDisplayDistance">100</float>
+			<bool name="RagdollDeath">true</bool>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040f5</UniqueId>
+			<bool name="UserEmotesEnabled">true</bool>
+		</Properties>
+		<Item class="StarterCharacterScripts" referent="24">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">StarterCharacterScripts</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000415a</UniqueId>
+			</Properties>
+		</Item>
+		<Item class="StarterPlayerScripts" referent="25">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">StarterPlayerScripts</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000415b</UniqueId>
+			</Properties>
+			<Item class="LocalScript" referent="26">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<bool name="Disabled">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">DisableChat</string>
+					<token name="RunContext">0</token>
+					<string name="ScriptGuid">{18ec154e-79a5-488a-a43d-51ce3649666d}</string>
+					<ProtectedString name="Source"><![CDATA[-- Immediate chat disabling to prevent ChatScript errors
+local StarterGui = game:GetService("StarterGui")
+
+-- Disable chat immediately, before other scripts can interfere
+pcall(function()
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+end)
+
+-- Additional cleanup after a brief delay
+task.spawn(function()
+    task.wait(1)
+
+    -- Ensure chat stays disabled
+    pcall(function()
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+    end)
+
+    -- Try to clear any remaining chat elements
+    pcall(function()
+        local success = pcall(function()
+            StarterGui:SetCore("ChatActive", false)
+        end)
+        if not success then
+            -- If ChatActive doesn't work, try alternative
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+        end
+    end)
+end)
+
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000415c</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="LocalScript" referent="27">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<bool name="Disabled">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">DisableClassicChat</string>
+					<token name="RunContext">0</token>
+					<string name="ScriptGuid">{09f002b6-c21b-4d07-b501-435056f04ba7}</string>
+					<ProtectedString name="Source"><![CDATA[-- This script is now disabled to avoid conflicts with Roblox's core chat systems
+-- All chat disabling is handled by DisableChat.client.lua using proper APIs
+
+-- Keeping this file for compatibility but doing nothing to avoid errors
+print("[DisableClassicChat] Chat disabling handled by main DisableChat script")
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000415d</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="Folder" referent="28">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<string name="Name">Input</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000415e</UniqueId>
+				</Properties>
+				<Item class="LocalScript" referent="29">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<bool name="Disabled">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">BoardUp</string>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{584624d8-3248-4d0d-af43-ca382d4d9dc5}</string>
+						<ProtectedString name="Source"><![CDATA[-- Client helper: while holding the Board Up prompt key, repeatedly ask server to place boards.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local UIS = game:GetService("UserInputService")
+
+local Events do
+    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
+    if ok then Events = mod end
+end
+
+local interval = 0.2
+local boardKey = Enum.KeyCode.E
+local kickKey = Enum.KeyCode.Q
+do
+    local ok, ConfigLoader = pcall(function() return require(ReplicatedStorage.Shared.ConfigLoader) end)
+    if ok then
+        local cfg = ConfigLoader.Load("BoardUpClient")
+        if cfg and cfg.CONSTRUCTION and cfg.CONSTRUCTION.BOARDUP then
+            if cfg.CONSTRUCTION.BOARDUP.Hold then
+                interval = math.max(0.05, cfg.CONSTRUCTION.BOARDUP.Hold)
+            end
+            if cfg.CONSTRUCTION.BOARDUP.KeyCode then
+                boardKey = cfg.CONSTRUCTION.BOARDUP.KeyCode
+            end
+            if cfg.CONSTRUCTION.DESTROY and cfg.CONSTRUCTION.DESTROY.KeyCode then
+                kickKey = cfg.CONSTRUCTION.DESTROY.KeyCode
+            end
+        end
+    end
+end
+
+local activePrompt: ProximityPrompt? = nil
+local holdAccum = 0
+local boardHeld = false
+local keyHeld = false
+
+local function isOpeningPrompt(prompt: ProximityPrompt)
+    local p = prompt and prompt.Parent
+    return p and p:IsA("BasePart") and p.Parent and p.Parent.Name == "Openings"
+end
+
+-- Track currently shown opening prompt (do not clear on Hidden to avoid single-board stalls)
+ProximityPromptService.PromptShown:Connect(function(prompt)
+    if isOpeningPrompt(prompt) then
+        activePrompt = prompt
+        holdAccum = 0
+    end
+end)
+
+-- Also track actual hold begin/end for reliable state
+ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+    if isOpeningPrompt(prompt) then
+        activePrompt = prompt
+        holdAccum = 0
+        boardHeld = true
+        keyHeld = true
+    end
+end)
+
+ProximityPromptService.PromptButtonHoldEnded:Connect(function(prompt)
+    if prompt == activePrompt then
+        boardHeld = false
+        holdAccum = 0
+    end
+end)
+
+-- Do not forcibly clear on PromptHidden; engine may hide between triggers.
+
+-- Track board key state
+-- We query key state directly per-frame; no need to observe InputBegan/Ended
+
+-- Drive continuous placement independent of the engine's prompt hold cycle
+local RunService = game:GetService("RunService")
+-- Track physical key state regardless of gameProcessedEvent
+UIS.InputBegan:Connect(function(input)
+    if input.KeyCode == boardKey then keyHeld = true end
+end)
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == boardKey then keyHeld = false end
+end)
+
+RunService.Heartbeat:Connect(function(dt)
+    if not (activePrompt and activePrompt.Parent and activePrompt.Enabled) then
+        holdAccum = 0
+        return
+    end
+    -- Build action while E is held (only when the visible prompt is NOT Kick)
+    if keyHeld and Events and Events.BoardUp and (activePrompt.Name ~= "KickPrompt") then
+        holdAccum += dt
+        if holdAccum >= interval then
+            holdAccum -= interval
+            Events.BoardUp:FireServer(activePrompt.Parent)
+        end
+    end
+end)
+
+-- Kick action on key press (single; strong when Shift + Key)
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == kickKey and activePrompt and activePrompt.Enabled and Events and Events.BoardKick then
+        local strong = UIS:IsKeyDown(Enum.KeyCode.LeftShift) or UIS:IsKeyDown(Enum.KeyCode.RightShift)
+        Events.BoardKick:FireServer(activePrompt.Parent, strong)
+    end
+end)
+]]></ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+						<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000415f</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="LocalScript" referent="30">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<bool name="Disabled">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">Construction</string>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{d14e7c8b-6dfb-449c-a059-6e63e6d141c1}</string>
+						<ProtectedString name="Source"><![CDATA[-- Client input: press B to request construction
+
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Events
+do
+    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
+    if ok and mod then Events = mod else
+        local folder = ReplicatedStorage:WaitForChild("Remotes", 5)
+        local function get(name)
+            return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
+        end
+        Events = { Construction = get("ConstructionRequest") }
+    end
+end
+
+local debounce = false
+local COOLDOWN = 0.5
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.B then
+        if debounce then return end
+        debounce = true
+        if Events and Events.Construction then
+            print("[Construction] Sending build request (B pressed)")
+            Events.Construction:FireServer()
+        else
+            warn("[Construction] Remote missing; server may not be ready")
+        end
+        task.delay(COOLDOWN, function() debounce = false end)
+    end
+end)
+]]></ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+						<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004160</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="LocalScript" referent="31">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<bool name="Disabled">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">InputController</string>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{d2e40df6-d926-4046-9d55-bad9dba1cf16}</string>
+						<ProtectedString name="Source"><![CDATA[local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local function getEvents()
+    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
+    if ok and mod then return mod end
+    local folder = ReplicatedStorage:WaitForChild("Remotes", 5)
+    local function get(name)
+        return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
+    end
+    return {
+        FireWeapon = get("FireWeapon"),
+    }
+end
+
+-- Input validation functions
+local function validateVector3(vec)
+    if typeof(vec) ~= "Vector3" then return false end
+    if vec.X ~= vec.X or vec.Y ~= vec.Y or vec.Z ~= vec.Z then return false end -- Check for NaN
+    return true
+end
+
+local function validateWeaponInput()
+    local cam = workspace.CurrentCamera
+    if not cam then return false, "No camera" end
+
+    local origin = cam.CFrame.Position
+    local dir = cam.CFrame.LookVector * 500
+
+    if not validateVector3(origin) or not validateVector3(dir) then
+        return false, "Invalid camera vectors"
+    end
+
+    return true, origin, dir
+end
+
+local Events = getEvents()
+
+local firing = false
+
+UserInputService.InputBegan:Connect(function(io, gpe)
+    if gpe then return end
+    if io.UserInputType == Enum.UserInputType.MouseButton1 then
+        firing = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(io)
+    if io.UserInputType == Enum.UserInputType.MouseButton1 then
+        firing = false
+    end
+end)
+
+-- TODO: ISSUE #10 - Performance Issue: RenderStepped runs every frame for input
+-- Should use heartbeat or input service events instead of polling every frame
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not firing then return end
+
+    local isValid, origin, dir = validateWeaponInput()
+    if not isValid then
+        warn("[InputController] Invalid weapon input: " .. origin)
+        return
+    end
+
+    -- Add error handling for server communication
+    local success, result = pcall(function()
+        return Events.FireWeapon:FireServer({ origin = origin, dir = dir, weaponName = "Carbine" })
+    end)
+
+    if not success then
+        warn("[InputController] Failed to fire weapon: " .. result)
+    end
+end)
+]]></ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+						<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004161</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="LocalScript" referent="RBXcba90704e092451aac2944b91a3b60ed">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<bool name="Disabled">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">KickPromptControl</string>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{e48bf0fe-e045-45f7-a195-7fe0a350c968}</string>
+						<ProtectedString name="Source"><![CDATA[-- Client-side filter: show Kick prompt only on the closest opening that has any boards.
+-- If the closest opening with boards is not fully sealed, we still hide Kick prompts elsewhere.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local function getHRP()
+    local c = player.Character or player.CharacterAdded:Wait()
+    return c:WaitForChild("HumanoidRootPart")
+end
+
+local PlankWidth = 1.5
+local MaxBoardsPerOpening = 24
+local DestroyDistance = 12
+do
+    local ok, ConfigLoader = pcall(function() return require(ReplicatedStorage.Shared.ConfigLoader) end)
+    if ok then
+        local cfg = ConfigLoader.Load("KickPromptControl")
+        if cfg and cfg.CONSTRUCTION then
+            local bu = cfg.CONSTRUCTION.BOARDUP
+            if bu then
+                PlankWidth = bu.PlankWidth or PlankWidth
+                MaxBoardsPerOpening = bu.MaxBoardsPerOpening or MaxBoardsPerOpening
+            end
+            local d = cfg.CONSTRUCTION.DESTROY
+            if d then
+                DestroyDistance = d.Distance or DestroyDistance
+            end
+        end
+    end
+end
+
+local function computeQuota(proxy: BasePart)
+    local axis = proxy:GetAttribute("Axis") or "x"
+    local length = (axis == "x") and proxy.Size.X or proxy.Size.Z
+    local N = math.max(1, math.ceil(length / PlankWidth))
+    N = math.min(N, MaxBoardsPerOpening)
+    local boards = proxy:FindFirstChild("Boards")
+    local current = boards and #boards:GetChildren() or 0
+    return N, current
+end
+
+local function eachOpenings()
+    local res = {}
+    for _, model in ipairs(workspace:GetChildren()) do
+        if model:IsA("Model") then
+            local openings = model:FindFirstChild("Openings")
+            if openings then
+                for _, proxy in ipairs(openings:GetChildren()) do
+                    if proxy:IsA("BasePart") then
+                        table.insert(res, proxy)
+                    end
+                end
+            end
+        end
+    end
+    return res
+end
+
+local function step()
+    local hrp = getHRP()
+    local nearest, nd2
+    for _, proxy in ipairs(eachOpenings()) do
+        local boardsFolder = proxy:FindFirstChild("Boards")
+        if boardsFolder and #boardsFolder:GetChildren() > 0 then
+            local d2 = (proxy.Position - hrp.Position).Magnitude
+            if d2 <= DestroyDistance and (not nd2 or d2 < nd2) then
+                nearest, nd2 = proxy, d2
+            end
+        end
+    end
+
+    -- Hide all kick prompts except the nearest with boards; if nearest is not sealed, hide all
+    for _, proxy in ipairs(eachOpenings()) do
+        local kp = proxy:FindFirstChild("KickPrompt")
+        if kp and kp:IsA("ProximityPrompt") then
+            kp.Enabled = false
+        end
+    end
+
+    if nearest then
+        local N, current = computeQuota(nearest)
+        if current >= N then
+            local kp = nearest:FindFirstChild("KickPrompt")
+            if kp and kp:IsA("ProximityPrompt") then
+                kp.Enabled = true
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        step()
+        task.wait(0.25)
+    end
+end)
+
+]]></ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+						<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004902</UniqueId>
+					</Properties>
+				</Item>
+			</Item>
+			<Item class="Folder" referent="32">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<string name="Name">UI</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004162</UniqueId>
+				</Properties>
+				<Item class="LocalScript" referent="33">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<bool name="Disabled">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">Hud</string>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{2d76d5ac-df39-4b81-b715-6e35c350048c}</string>
+						<ProtectedString name="Source"><![CDATA[-- Enhanced HUD with clear score display, timer, and team assignment
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Camera = workspace.CurrentCamera
+
+local function getEvents()
+    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
+    if ok and mod then return mod end
+    local folder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:WaitForChild("Remotes", 5)
+    local function get(name)
+        return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
+    end
+    return {
+        RoundChanged = get("RoundChanged"),
+        Objective = get("ObjectiveEvent"),
+    }
+end
+
+local Events = getEvents()
+
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "HUD"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 5
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Wait for PlayerGui to be ready and avoid conflicts
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Clean up any existing HUD
+local existingHUD = playerGui:FindFirstChild("HUD")
+if existingHUD then
+    existingHUD:Destroy()
+end
+
+-- Add GUI to PlayerGui after a brief delay to avoid styling conflicts
+task.wait(0.5)
+gui.Parent = playerGui
+
+-- Main container (wider, more prominent)
+local container = Instance.new("Frame")
+container.Size = UDim2.new(0, 460, 0, 100)
+container.AnchorPoint = Vector2.new(0.5, 0)
+container.Position = UDim2.new(0.5, 0, 0, 20)
+container.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+container.BackgroundTransparency = 0.05
+container.BorderSizePixel = 0
+container.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = container
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Transparency = 0.9
+stroke.Parent = container
+
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(28,28,35)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(22,22,28)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(18,18,24))
+}
+gradient.Rotation = 90
+gradient.Parent = container
+
+-- Score display section
+local scoreSection = Instance.new("Frame")
+scoreSection.Size = UDim2.new(1, -40, 0, 40)
+scoreSection.Position = UDim2.new(0, 20, 0, 12)
+scoreSection.BackgroundTransparency = 1
+scoreSection.Parent = container
+
+-- Attack team score
+local attackFrame = Instance.new("Frame")
+attackFrame.Size = UDim2.new(0, 160, 1, 0)
+attackFrame.Position = UDim2.new(0, 0, 0, 0)
+attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
+attackFrame.BackgroundTransparency = 0.7
+attackFrame.BorderSizePixel = 0
+attackFrame.Parent = scoreSection
+
+local attackCorner = Instance.new("UICorner")
+attackCorner.CornerRadius = UDim.new(0, 10)
+attackCorner.Parent = attackFrame
+
+local attackStroke = Instance.new("UIStroke")
+attackStroke.Thickness = 3
+attackStroke.Color = Color3.fromRGB(255, 100, 100)
+attackStroke.Transparency = 1  -- Initially transparent
+attackStroke.Parent = attackFrame
+
+local attackGradient = Instance.new("UIGradient")
+attackGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
+}
+attackGradient.Rotation = 90
+attackGradient.Parent = attackFrame
+
+local attackTeamLabel = Instance.new("TextLabel")
+attackTeamLabel.Size = UDim2.new(0.55, 0, 0.5, 0)
+attackTeamLabel.Position = UDim2.new(0, 12, 0, 0)
+attackTeamLabel.BackgroundTransparency = 1
+attackTeamLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
+attackTeamLabel.TextXAlignment = Enum.TextXAlignment.Left
+attackTeamLabel.Font = Enum.Font.SourceSansSemibold
+attackTeamLabel.TextSize = 12
+attackTeamLabel.Text = "ATTACK"
+attackTeamLabel.Parent = attackFrame
+
+local attackScoreLabel = Instance.new("TextLabel")
+attackScoreLabel.Size = UDim2.new(0.45, -12, 1, 0)
+attackScoreLabel.Position = UDim2.new(0.55, 0, 0, 0)
+attackScoreLabel.BackgroundTransparency = 1
+attackScoreLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+attackScoreLabel.TextXAlignment = Enum.TextXAlignment.Right
+attackScoreLabel.Font = Enum.Font.SourceSansBold
+attackScoreLabel.TextSize = 28
+attackScoreLabel.Text = "0"
+attackScoreLabel.Parent = attackFrame
+
+local attackIcon = Instance.new("TextLabel")
+attackIcon.Size = UDim2.new(0.55, 0, 0.5, 0)
+attackIcon.Position = UDim2.new(0, 12, 0.5, 0)
+attackIcon.BackgroundTransparency = 1
+attackIcon.TextColor3 = Color3.fromRGB(160, 180, 200)
+attackIcon.TextXAlignment = Enum.TextXAlignment.Left
+attackIcon.Font = Enum.Font.SourceSansSemibold
+attackIcon.TextSize = 11
+attackIcon.Text = "⚔️ OFFENSIVE"
+attackIcon.Parent = attackFrame
+
+-- Defense team score
+local defenseFrame = Instance.new("Frame")
+defenseFrame.Size = UDim2.new(0, 160, 1, 0)
+defenseFrame.AnchorPoint = Vector2.new(1, 0)
+defenseFrame.Position = UDim2.new(1, 0, 0, 0)
+defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+defenseFrame.BackgroundTransparency = 0.7
+defenseFrame.BorderSizePixel = 0
+defenseFrame.Parent = scoreSection
+
+local defenseCorner = Instance.new("UICorner")
+defenseCorner.CornerRadius = UDim.new(0, 10)
+defenseCorner.Parent = defenseFrame
+
+local defenseStroke = Instance.new("UIStroke")
+defenseStroke.Thickness = 3
+defenseStroke.Color = Color3.fromRGB(100, 255, 100)
+defenseStroke.Transparency = 1  -- Initially transparent
+defenseStroke.Parent = defenseFrame
+
+local defenseGradient = Instance.new("UIGradient")
+defenseGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
+}
+defenseGradient.Rotation = 90
+defenseGradient.Parent = defenseFrame
+
+local defenseScoreLabel = Instance.new("TextLabel")
+defenseScoreLabel.Size = UDim2.new(0.45, -12, 1, 0)
+defenseScoreLabel.Position = UDim2.new(0, 12, 0, 0)
+defenseScoreLabel.BackgroundTransparency = 1
+defenseScoreLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+defenseScoreLabel.TextXAlignment = Enum.TextXAlignment.Left
+defenseScoreLabel.Font = Enum.Font.SourceSansBold
+defenseScoreLabel.TextSize = 28
+defenseScoreLabel.Text = "0"
+defenseScoreLabel.Parent = defenseFrame
+
+local defenseTeamLabel = Instance.new("TextLabel")
+defenseTeamLabel.Size = UDim2.new(0.55, 0, 0.5, 0)
+defenseTeamLabel.AnchorPoint = Vector2.new(1, 0)
+defenseTeamLabel.Position = UDim2.new(1, -12, 0, 0)
+defenseTeamLabel.BackgroundTransparency = 1
+defenseTeamLabel.TextColor3 = Color3.fromRGB(220, 180, 180)
+defenseTeamLabel.TextXAlignment = Enum.TextXAlignment.Right
+defenseTeamLabel.Font = Enum.Font.SourceSansSemibold
+defenseTeamLabel.TextSize = 12
+defenseTeamLabel.Text = "DEFENSE"
+defenseTeamLabel.Parent = defenseFrame
+
+local defenseIcon = Instance.new("TextLabel")
+defenseIcon.Size = UDim2.new(0.55, 0, 0.5, 0)
+defenseIcon.AnchorPoint = Vector2.new(1, 0)
+defenseIcon.Position = UDim2.new(1, -12, 0.5, 0)
+defenseIcon.BackgroundTransparency = 1
+defenseIcon.TextColor3 = Color3.fromRGB(200, 160, 160)
+defenseIcon.TextXAlignment = Enum.TextXAlignment.Right
+defenseIcon.Font = Enum.Font.SourceSansSemibold
+defenseIcon.TextSize = 11
+defenseIcon.Text = "DEFENSIVE 🛡️"
+defenseIcon.Parent = defenseFrame
+
+-- VS divider
+local vsFrame = Instance.new("Frame")
+vsFrame.Size = UDim2.new(0, 60, 0, 30)
+vsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+vsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+vsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+vsFrame.BorderSizePixel = 0
+vsFrame.Parent = scoreSection
+
+local vsCorner = Instance.new("UICorner")
+vsCorner.CornerRadius = UDim.new(0.5, 0)
+vsCorner.Parent = vsFrame
+
+local vsStroke = Instance.new("UIStroke")
+vsStroke.Thickness = 2
+vsStroke.Color = Color3.fromRGB(255, 255, 255)
+vsStroke.Transparency = 0.8
+vsStroke.Parent = vsFrame
+
+local vsLabel = Instance.new("TextLabel")
+vsLabel.Size = UDim2.new(1, 0, 1, 0)
+vsLabel.BackgroundTransparency = 1
+vsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+vsLabel.Font = Enum.Font.SourceSansBold
+vsLabel.TextSize = 16
+vsLabel.Text = "VS"
+vsLabel.Parent = vsFrame
+
+-- Bottom info section
+local infoSection = Instance.new("Frame")
+infoSection.Size = UDim2.new(1, -40, 0, 36)
+infoSection.Position = UDim2.new(0, 20, 1, -44)
+infoSection.BackgroundTransparency = 1
+infoSection.Parent = container
+
+
+-- Timer display
+local timerCard = Instance.new("Frame")
+timerCard.Size = UDim2.new(0, 140, 1, 0)
+timerCard.AnchorPoint = Vector2.new(1, 0)
+timerCard.Position = UDim2.new(1, 0, 0, 0)
+timerCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+timerCard.BackgroundTransparency = 0.3
+timerCard.BorderSizePixel = 0
+timerCard.Parent = infoSection
+
+local timerCardCorner = Instance.new("UICorner")
+timerCardCorner.CornerRadius = UDim.new(0, 10)
+timerCardCorner.Parent = timerCard
+
+local timerIcon = Instance.new("TextLabel")
+timerIcon.Size = UDim2.new(0, 30, 1, 0)
+timerIcon.Position = UDim2.new(0, 8, 0, 0)
+timerIcon.BackgroundTransparency = 1
+timerIcon.TextColor3 = Color3.fromRGB(180, 180, 180)
+timerIcon.Font = Enum.Font.SourceSansSemibold
+timerIcon.TextSize = 16
+timerIcon.Text = "⏱"
+timerIcon.Parent = timerCard
+
+local timerText = Instance.new("TextLabel")
+timerText.Size = UDim2.new(1, -38, 1, 0)
+timerText.Position = UDim2.new(0, 38, 0, 0)
+timerText.BackgroundTransparency = 1
+timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+timerText.TextXAlignment = Enum.TextXAlignment.Center
+timerText.Font = Enum.Font.SourceSansBold
+timerText.TextSize = 18
+timerText.Text = "0:00"
+timerText.Parent = timerCard
+
+-- Phase indicator
+local phaseLabel = Instance.new("TextLabel")
+phaseLabel.Size = UDim2.new(0, 160, 1, 0)
+phaseLabel.AnchorPoint = Vector2.new(0.5, 0)
+phaseLabel.Position = UDim2.new(0.5, 0, 0, 0)
+phaseLabel.BackgroundTransparency = 1
+phaseLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+phaseLabel.Font = Enum.Font.SourceSansSemibold
+phaseLabel.TextSize = 13
+phaseLabel.Text = "WAITING"
+phaseLabel.Parent = infoSection
+
+-- Enhanced toast notification
+local toastFrame = Instance.new("Frame")
+toastFrame.Size = UDim2.new(0, 400, 0, 42)
+toastFrame.AnchorPoint = Vector2.new(0.5, 0)
+toastFrame.Position = UDim2.new(0.5, 0, 0, 130)
+toastFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+toastFrame.BackgroundTransparency = 0
+toastFrame.BorderSizePixel = 0
+toastFrame.Visible = false
+toastFrame.Parent = gui
+
+local toastCorner = Instance.new("UICorner")
+toastCorner.CornerRadius = UDim.new(0, 12)
+toastCorner.Parent = toastFrame
+
+local toastStroke = Instance.new("UIStroke")
+toastStroke.Thickness = 2
+toastStroke.Color = Color3.fromRGB(255, 200, 100)
+toastStroke.Transparency = 0.3
+toastStroke.Parent = toastFrame
+
+local toastGradient = Instance.new("UIGradient")
+toastGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180,180,180))
+}
+toastGradient.Rotation = 90
+toastGradient.Parent = toastFrame
+
+local toastText = Instance.new("TextLabel")
+toastText.Size = UDim2.new(1, -20, 1, 0)
+toastText.Position = UDim2.new(0, 10, 0, 0)
+toastText.BackgroundTransparency = 1
+toastText.TextColor3 = Color3.fromRGB(255, 255, 255)
+toastText.Font = Enum.Font.SourceSansBold
+toastText.TextSize = 16
+toastText.Text = ""
+toastText.Parent = toastFrame
+
+-- Arrow removed - no directional guidance
+
+-- State variables
+local currentState = "Lobby"
+local scores = {A = 0, B = 0}
+local roundTimeRemaining = nil
+local roundPhase = nil
+local objectiveTimeLimit = 60
+local objectiveStartTime = 0
+local isCarrier = false
+local greenSpawnPos = nil
+local redSpawnPos = nil
+
+local function formatTime(s)
+    if not s or s < 0 then return "--:--" end
+    local m = math.floor(s/60)
+    local sec = math.floor(s % 60)
+    return string.format("%d:%02d", m, sec)
+end
+
+local function animateToast(text, duration, color)
+    toastText.Text = text or ""
+    toastFrame.Visible = text ~= nil and text ~= ""
+
+    if toastFrame.Visible then
+        -- Set color
+        local toastColor = color or Color3.fromRGB(255, 200, 100)
+        toastStroke.Color = toastColor
+
+        -- Animate in
+        toastFrame.Position = UDim2.new(0.5, 0, 0, 110)
+        local tweenIn = TweenService:Create(
+            toastFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            {Position = UDim2.new(0.5, 0, 0, 130)}
+        )
+        tweenIn:Play()
+
+        -- Schedule hide
+        task.delay(duration or 2, function()
+            local tweenOut = TweenService:Create(
+                toastFrame,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Position = UDim2.new(0.5, 0, 0, 110)}
+            )
+            tweenOut:Play()
+            tweenOut.Completed:Connect(function()
+                toastFrame.Visible = false
+            end)
+        end)
+    end
+end
+
+local function updatePanel()
+    -- Update scores
+    attackScoreLabel.Text = tostring(scores.A or 0)
+    defenseScoreLabel.Text = tostring(scores.B or 0)
+
+    -- Update team indicator (removed - now handled by score styling)
+    local team = Players.LocalPlayer.Team
+    if team then
+        local teamColor = team.TeamColor.Color
+        -- Team indicator removed - functionality moved to score styling
+
+        -- Highlight active team score with team colors
+        if team.Name == "Red" then
+            -- Red team: red border and transparent red background for attack score
+            attackFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+            attackFrame.BackgroundTransparency = 0.3  -- Transparent red
+            attackStroke.Transparency = 0  -- Show red border
+            defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+            defenseFrame.BackgroundTransparency = 0.7  -- Default transparency
+            defenseStroke.Transparency = 1  -- Hide green border
+        elseif team.Name == "Green" then
+            -- Green team: green border and transparent green background for defense score
+            defenseFrame.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            defenseFrame.BackgroundTransparency = 0.3  -- Transparent green
+            defenseStroke.Transparency = 0  -- Show green border
+            attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
+            attackFrame.BackgroundTransparency = 0.7  -- Default transparency
+            attackStroke.Transparency = 1  -- Hide red border
+        end
+    else
+        -- Spectator: reset both frames to default styling
+        attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
+        attackFrame.BackgroundTransparency = 0.7
+        attackStroke.Transparency = 1  -- Hide red border
+        defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        defenseFrame.BackgroundTransparency = 0.7
+        defenseStroke.Transparency = 1  -- Hide green border
+    end
+
+    -- Update timer
+    local remain = roundTimeRemaining
+    if remain == nil and currentState == "Live" and objectiveStartTime > 0 then
+        local elapsed = os.clock() - objectiveStartTime
+        remain = math.max(0, objectiveTimeLimit - elapsed)
+    end
+
+    if remain then
+        timerText.Text = formatTime(remain)
+        -- Flash when low time
+        if remain <= 10 then
+            timerText.TextColor3 = Color3.fromRGB(255, 100, 100)
+            timerIcon.TextColor3 = Color3.fromRGB(255, 100, 100)
+        else
+            timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+            timerIcon.TextColor3 = Color3.fromRGB(180, 180, 180)
+        end
+    else
+        timerText.Text = "--:--"
+        timerText.TextColor3 = Color3.fromRGB(180, 180, 180)
+        timerIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
+    end
+
+    -- Update phase (don't override if already set by message in onRoundChanged)
+    local phase = roundPhase or currentState
+    if phase == "Lobby" then
+        -- Keep existing text if it's a special message, otherwise show default
+        if not phaseLabel.Text:find("WAITING") and not phaseLabel.Text:find("STARTING") then
+            phaseLabel.Text = "🏠 LOBBY"
+            phaseLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+        end
+    elseif phase == "Live" or phase == "InProgress" then
+        phaseLabel.Text = "🎮 LIVE"
+        phaseLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    elseif phase == "Intermission" then
+        phaseLabel.Text = "⏸ BREAK"
+        phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    elseif phase == "Prep" then
+        phaseLabel.Text = "⏱ GET READY"
+        phaseLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+    elseif phase == "End" then
+        phaseLabel.Text = "🏆 ROUND OVER"
+        phaseLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    elseif phase == "MatchComplete" then
+        phaseLabel.Text = "🎯 MATCH COMPLETE"
+        phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
+    else
+        if phase and phase ~= "" then
+            phaseLabel.Text = string.upper(phase)
+            phaseLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        end
+    end
+end
+
+local function onRoundChanged(payload)
+    scores = payload and payload.scores or scores
+    currentState = payload and payload.state or currentState
+    roundTimeRemaining = payload and payload.timeRemaining or nil
+    roundPhase = payload and payload.phase or nil
+
+    -- Handle lobby messages
+    if payload and payload.message then
+        -- Update phase label with the message (e.g., "Waiting for players..." or "Match starting in...")
+        phaseLabel.Text = string.upper(payload.message)
+        if payload.message:find("Waiting") then
+            phaseLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+        elseif payload.message:find("starting") then
+            phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+        end
+    end
+
+    updatePanel()
+end
+
+local function onObjectiveEvent(payload)
+    if payload.type == "ObjectiveSpawned" then
+        objectiveTimeLimit = payload.timeLimit or 60
+        objectiveStartTime = os.clock()
+        greenSpawnPos = payload.greenSpawn or (workspace:FindFirstChild("GreenSpawn") and workspace.GreenSpawn.Position) or greenSpawnPos
+        redSpawnPos = payload.redSpawn or (workspace:FindFirstChild("RedSpawn") and workspace.RedSpawn.Position) or redSpawnPos
+        animateToast("🎯 OBJECTIVE SPAWNED", 2, Color3.fromRGB(100, 255, 100))
+    elseif payload.type == "ObjectiveDelivered" then
+        isCarrier = false
+        animateToast("✅ OBJECTIVE DELIVERED", 2.5, Color3.fromRGB(100, 255, 100))
+    elseif payload.type == "TimeUp" then
+        animateToast("⏰ TIME'S UP", 2, Color3.fromRGB(255, 100, 100))
+    elseif payload.type == "Carry" then
+        isCarrier = (payload.by == Players.LocalPlayer.UserId)
+        if isCarrier then
+            local t = Players.LocalPlayer.Team
+            if t and t.Name == "Red" then
+                animateToast("💎 CARRYING - GO TO RED SPAWN", 3, Color3.fromRGB(255, 220, 50))
+            else
+                animateToast("💎 CARRYING - AVOID RED TEAM", 3, Color3.fromRGB(255, 220, 50))
+            end
+        else
+            local who = Players:GetPlayerByUserId(payload.by)
+            if who and Players.LocalPlayer.Team and who.Team == Players.LocalPlayer.Team then
+                animateToast("👥 ALLY HAS OBJECTIVE", 1.5, Color3.fromRGB(100, 200, 255))
+            else
+                animateToast("⚠️ ENEMY HAS OBJECTIVE", 1.5, Color3.fromRGB(255, 100, 100))
+            end
+        end
+    elseif payload.type == "Dropped" then
+        if payload.by == Players.LocalPlayer.UserId then
+            isCarrier = false
+        end
+        animateToast("📦 OBJECTIVE DROPPED", 1.5, Color3.fromRGB(200, 200, 100))
+    elseif payload.type == "Stolen" then
+        if payload.by == Players.LocalPlayer.UserId then
+            isCarrier = true
+            animateToast("⚡ STOLEN - RUN!", 2.5, Color3.fromRGB(255, 100, 50))
+        elseif payload.from == Players.LocalPlayer.UserId then
+            isCarrier = false
+            animateToast("❌ STOLEN FROM YOU", 2, Color3.fromRGB(255, 50, 50))
+        else
+            animateToast("🔄 OBJECTIVE STOLEN", 2, Color3.fromRGB(255, 150, 50))
+        end
+    end
+end
+
+if Events.RoundChanged then Events.RoundChanged.OnClientEvent:Connect(onRoundChanged) end
+if Events.Objective then Events.Objective.OnClientEvent:Connect(onObjectiveEvent) end
+
+-- React to team changes
+Players.LocalPlayer:GetPropertyChangedSignal("Team"):Connect(updatePanel)
+
+-- Update panel
+RunService.RenderStepped:Connect(function()
+    updatePanel()
+end)]]></ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+						<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004163</UniqueId>
+					</Properties>
+				</Item>
+			</Item>
+			<Item class="Folder" referent="RBX9af818a1a80a406e856be7518408e66b">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<string name="Name">Effects</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000479e</UniqueId>
+				</Properties>
+				<Item class="LocalScript" referent="RBX3f8666f5f20e4e4c9ba6338c4fe5dc44">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<bool name="Disabled">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<Content name="LinkedSource"><null></null></Content>
+						<string name="Name">BoardFx</string>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{bdbc5424-4df3-403b-b2cb-d143004d0154}</string>
+						<ProtectedString name="Source"><![CDATA[-- Simple local FX for board kicks: camera shake
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local Events
+do
+    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
+    if ok then Events = mod end
+end
+
+local function shakeCamera(mag, dur)
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+    local t = 0
+    local conn
+    conn = RunService.RenderStepped:Connect(function(dt)
+        t += dt
+        if t >= dur then
+            if conn then conn:Disconnect() end
+            return
+        end
+        local off = Vector3.new((math.random()-0.5)*mag, (math.random()-0.5)*mag, 0)
+        cam.CFrame = cam.CFrame * CFrame.new(off)
+    end)
+end
+
+local function onFX(payload)
+    if type(payload) ~= "table" then return end
+    if payload.kind == "Kick" then
+        shakeCamera(payload.mag or 0.3, payload.dur or 0.1)
+    end
+end
+
+if Events and Events.BoardFX then
+    Events.BoardFX.OnClientEvent:Connect(onFX)
+end
+
+]]></ProtectedString>
+						<int64 name="SourceAssetId">-1</int64>
+						<BinaryString name="Tags"></BinaryString>
+						<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000479f</UniqueId>
+					</Properties>
+				</Item>
+			</Item>
+		</Item>
+	</Item>
+	<Item class="StarterPack" referent="RBX77dde2455a2044a9b3f880d14e1eeae8">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">StarterPack</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040f6</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="StarterGui" referent="RBX7ef9093df94649abb680b381862d0d49">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">StarterGui</string>
+			<bool name="ResetPlayerGuiOnSpawn">true</bool>
+			<token name="RtlTextSupport">0</token>
+			<token name="ScreenOrientation">2</token>
+			<bool name="ShowDevelopmentGui">true</bool>
+			<int64 name="SourceAssetId">-1</int64>
+			<Ref name="StudioDefaultStyleSheet">null</Ref>
+			<Ref name="StudioInsertWidgetLayerCollectorAutoLinkStyleSheet">null</Ref>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040f7</UniqueId>
+			<token name="VirtualCursorMode">0</token>
+		</Properties>
+	</Item>
+	<Item class="LocalizationService" referent="RBXc7916e3745b0429895b71f43c4ed7be4">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">LocalizationService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040f9</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="TeleportService" referent="RBX3d0b09d6eeb14b37b460faa215a74728">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">Teleport Service</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040fd</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="CollectionService" referent="RBX68e83bb1f72c4043a8ca0308524fc400">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">CollectionService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000040ff</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="PhysicsService" referent="RBX2f60ce8fb3004c67aa63147b8e247d2b">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">PhysicsService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004100</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="InsertService" referent="RBXcc8ce002bbcf4f38afdeb4c43cef3884">
+		<Properties>
+			<bool name="AllowClientInsertModels">false</bool>
+			<bool name="AllowInsertFreeModels">false</bool>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">InsertService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004103</UniqueId>
+		</Properties>
+		<Item class="StringValue" referent="RBX8b2b225c6d174da0a5aac97ad29d5a04">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">InsertionHash</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a000049b8</UniqueId>
+				<string name="Value">{5a173ec4-6271-4fbc-a898-9ad4bb23a11f}</string>
+			</Properties>
+		</Item>
+	</Item>
+	<Item class="GamePassService" referent="RBX3527a3f28d7b4368a5500bfabe4fa2f5">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">GamePassService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004104</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="Debris" referent="RBX2691187cc0e345cbbbbf095f9c5a5166">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<int name="MaxItems">1000</int>
+			<string name="Name">Debris</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004105</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="CookiesService" referent="RBXa6bedaee22e84015bb5bd947b5afd3fd">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">CookiesService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004106</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="Selection" referent="RBXba944ea0a4254a0498797957d53ea2a0">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">Selection</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004107</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="VRService" referent="RBX0ef8ec3e04024d52bdb89b6d2b5d9c91">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<token name="AutomaticScaling">0</token>
+			<bool name="AvatarGestures">false</bool>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<token name="ControllerModels">1</token>
+			<bool name="DefinesCapabilities">false</bool>
+			<bool name="FadeOutViewOnCollision">true</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<token name="LaserPointer">1</token>
+			<string name="Name">VRService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000410b</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="ContextActionService" referent="RBXb1270feeda014fb891f6cea3318a6f3d">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ContextActionService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000410c</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="ScriptService" referent="RBXf41cc0892a9848efad93f3fff5ea6d2d">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ScriptService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000410d</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="AssetService" referent="RBXd7d44f1ebba747c4a163724b642ecfaf">
+		<Properties>
+			<bool name="AllowInsertFreeAssets">false</bool>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">AssetService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000410e</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="TouchInputService" referent="RBX90b713a3b6aa420089131949e4b908a3">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">TouchInputService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000410f</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="AvatarSettings" referent="RBX2d3cee55face4f759d69398ac6bbb113">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">AvatarSettings</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004115</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="LuaWebService" referent="RBXb0755b565abf43e4bbe0f5b87ace9b59">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">LuaWebService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000411d</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="ProcessInstancePhysicsService" referent="RBX16380d5b815944f1ae0444d9f0cec565">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ProcessInstancePhysicsService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000411e</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="ReplicatedStorage" referent="0">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ReplicatedStorage</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000411f</UniqueId>
+		</Properties>
+		<Item class="Folder" referent="1">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Construction</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004143</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="2">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">Generator</string>
+					<string name="ScriptGuid">{6c15ff58-3052-4e27-afa7-3262b64db825}</string>
+					<ProtectedString name="Source"><![CDATA[-- Construction.Generator: Procedural building generator (rooms, corridors, walls, doors, windows)
 -- Single-responsibility: generate a building Model from config
 -- No network, no input; pure generation using axis-aligned rectangles and part emission
 
@@ -1078,18 +3223,34 @@ function Generator.Generate(originCFrame: CFrame, cfg)
 end
 
 return Generator
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-    <Item class="Folder" referent="3">
-      <Properties>
-        <string name="Name">Net</string>
-      </Properties>
-      <Item class="ModuleScript" referent="4">
-        <Properties>
-          <string name="Name">Events</string>
-          <string name="Source"><![CDATA[-- Centralized RemoteEvent/RemoteFunction registry
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004144</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Folder" referent="3">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Net</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004146</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="4">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">Events</string>
+					<string name="ScriptGuid">{1f84870a-10ad-4935-9f6c-f3de2193b1b1}</string>
+					<ProtectedString name="Source"><![CDATA[-- Centralized RemoteEvent/RemoteFunction registry
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -1130,22 +3291,40 @@ Events.Objective = ensure("ObjectiveEvent", "RemoteEvent")
 -- Construction/building requests
 Events.Construction = ensure("ConstructionRequest", "RemoteEvent")
 Events.BoardUp = ensure("BoardUpRequest", "RemoteEvent")
+Events.BoardKick = ensure("BoardKickRequest", "RemoteEvent")
+Events.BoardFX = ensure("BoardFX", "RemoteEvent")
 -- Debug/minimap update
 Events.ConstructionMap = ensure("ConstructionMap", "RemoteEvent")
 
 return Events
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-    <Item class="Folder" referent="5">
-      <Properties>
-        <string name="Name">Shared</string>
-      </Properties>
-      <Item class="ModuleScript" referent="6">
-        <Properties>
-          <string name="Name">Config</string>
-          <string name="Source"><![CDATA[-- Central game configuration (shared)
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004147</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Folder" referent="5">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Shared</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004148</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="6">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">Config</string>
+					<string name="ScriptGuid">{07aa9f14-fede-4ae1-a15b-62a1228fb1d2}</string>
+					<ProtectedString name="Source"><![CDATA[-- Central game configuration (shared)
 
 local Config = {
     forceR6 = true,
@@ -1256,17 +3435,36 @@ local Config = {
             Material = Enum.Material.WoodPlanks,
             Color = Color3.fromRGB(155, 120, 80),
         },
+
+        DESTROY = {
+            KeyCode = Enum.KeyCode.Q,
+            Cooldown = 0.25,
+            MaxPerMinute = 60,
+            Distance = 12,
+            DoubleBreakChance = 0.25,
+            StrongBreakMax = 4, -- max boards removed on a strong kick
+            Shake = { Mag = 0.5, Duration = 0.12 },
+        },
     },
 }
 
 return Config
-]]></string>
-        </Properties>
-      </Item>
-      <Item class="ModuleScript" referent="7">
-        <Properties>
-          <string name="Name">ConfigLoader</string>
-          <string name="Source"><![CDATA[-- Centralized configuration loading utility
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004149</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="7">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">ConfigLoader</string>
+					<string name="ScriptGuid">{95a30595-d2d0-478c-82c1-e00f9e15981a}</string>
+					<ProtectedString name="Source"><![CDATA[-- Centralized configuration loading utility
 -- Eliminates duplication and ensures consistent fallback behavior
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1326,23 +3524,47 @@ function ConfigLoader.Load(moduleName: string?)
 end
 
 return ConfigLoader
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-  </Item>
-  <Item class="ServerScriptService" referent="8">
-    <Properties>
-      <string name="Name">ServerScriptService</string>
-    </Properties>
-    <Item class="Folder" referent="9">
-      <Properties>
-        <string name="Name">AntiCheat</string>
-      </Properties>
-      <Item class="ModuleScript" referent="10">
-        <Properties>
-          <string name="Name">RateLimiter</string>
-          <string name="Source"><![CDATA[local RateLimiter = {}
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000414a</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+	</Item>
+	<Item class="ServerScriptService" referent="8">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="LoadStringEnabled">false</bool>
+			<string name="Name">ServerScriptService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004120</UniqueId>
+		</Properties>
+		<Item class="Folder" referent="9">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">AntiCheat</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000414b</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="10">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">RateLimiter</string>
+					<string name="ScriptGuid">{10d8f024-443c-42c1-aae8-c309962af6a0}</string>
+					<ProtectedString name="Source"><![CDATA[local RateLimiter = {}
 local buckets = {} -- [userId][key] = {count, t0}
 
 function RateLimiter.Allow(player, key, perMinute)
@@ -1358,24 +3580,43 @@ end
 
 return RateLimiter
 
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-    <Item class="Script" referent="11">
-      <Properties>
-        <string name="Name">Construction</string>
-        <token name="RunContext">0</token>
-        <string name="Source"><![CDATA[-- Bootstrap for ConstructionService to keep concerns separated
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000414c</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Script" referent="11">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Disabled">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">Construction</string>
+				<token name="RunContext">0</token>
+				<string name="ScriptGuid">{f589d554-90e7-4498-8469-cc2ef7a20aa7}</string>
+				<ProtectedString name="Source"><![CDATA[-- Bootstrap for ConstructionService to keep concerns separated
 local ConstructionService = require(script.Parent.ConstructionService)
 -- Nothing else needed; module self-initializes
 
-]]></string>
-      </Properties>
-      <Item class="ModuleScript" referent="12">
-        <Properties>
-          <string name="Name">BoardUpService</string>
-          <string name="Source"><![CDATA[-- BoardUpService: allows players to board up openings (doors/windows/passages)
+]]></ProtectedString>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000414d</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="12">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">BoardUpService</string>
+					<string name="ScriptGuid">{3642a687-3e0c-4a10-b387-a7959ffbef47}</string>
+					<ProtectedString name="Source"><![CDATA[-- BoardUpService: allows players to board up openings (doors/windows/passages)
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -1420,6 +3661,40 @@ local function setPromptEnabled(proxy: BasePart, enabled: boolean)
     end
 end
 
+local function ensureKickPrompt(proxy: BasePart, cfg)
+    local prompt = proxy:FindFirstChild("KickPrompt")
+    if not prompt then
+        prompt = Instance.new("ProximityPrompt")
+        prompt.Name = "KickPrompt"
+        prompt.ActionText = "Kick"
+        prompt.ObjectText = "Boards"
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        prompt.Parent = proxy
+    end
+    prompt.KeyboardKeyCode = (cfg and cfg.KeyCode) or Enum.KeyCode.Q
+    prompt.MaxActivationDistance = (cfg and cfg.Distance) or 12
+    return prompt
+end
+
+local function updatePrompts(proxy: BasePart, buildCfg, destroyCfg)
+    local boardPrompt = proxy:FindFirstChildOfClass("ProximityPrompt")
+    if boardPrompt then
+        boardPrompt.KeyboardKeyCode = (buildCfg and buildCfg.KeyCode) or DEFAULT.KeyCode
+        boardPrompt.HoldDuration = (buildCfg and buildCfg.Hold) or DEFAULT.Hold
+        boardPrompt.MaxActivationDistance = (buildCfg and buildCfg.Distance) or DEFAULT.Distance
+    end
+    local N, current = computeQuota(proxy, getCfg(buildCfg))
+    local kickPrompt = ensureKickPrompt(proxy, destroyCfg)
+    -- Show only one prompt at a time:
+    -- - Board Up when not fully sealed (current < N)
+    -- - Kick only when fully sealed (current == N)
+    local showKick = (current >= N and N > 0)
+    local showBoard = (current < N)
+    if boardPrompt then boardPrompt.Enabled = showBoard end
+    kickPrompt.Enabled = showKick
+end
+
 local function countChildren(folder)
     local n = 0
     for _, _ in ipairs(folder:GetChildren()) do n += 1 end
@@ -1429,7 +3704,7 @@ end
 -- per-proxy per-player last time stamp to enforce hold build time
 local lastAt: { [Instance]: { [number]: number } } = {}
 
-local function placeBoard(player: Player, proxy: BasePart, cfg)
+local function placeBoard(player: Player, proxy: BasePart, cfg, destroyCfg)
     if not player or not player.Parent then return end
     cfg = getCfg(cfg)
     local minPerMinute = math.max(cfg.MaxPerMinute or 0, math.floor(60 / math.max(0.05, cfg.Hold)) + 5)
@@ -1484,50 +3759,126 @@ local function placeBoard(player: Player, proxy: BasePart, cfg)
     plank.Parent = boards
 
     if idx + 1 >= N then setPromptEnabled(proxy, false) end
+    updatePrompts(proxy, cfg, destroyCfg)
 end
 
-function BoardUpService.Attach(model: Model, cfg)
+-- Knock down one random board with fun effects
+local lastKick: { [Instance]: { [number]: number } } = {}
+
+local function kickBoard(player: Player, proxy: BasePart, cfg, destroyCfg, strong: boolean?)
+    cfg = getCfg(cfg)
+    destroyCfg = destroyCfg or {}
+    local perMinute = (destroyCfg.MaxPerMinute or 60)
+    if not RateLimiter.Allow(player, "BOARDKICK", perMinute) then return end
+    -- Cooldown per opening per player
+    local cd = destroyCfg.Cooldown or 0.25
+    lastKick[proxy] = lastKick[proxy] or {}
+    local now = os.clock()
+    local last = lastKick[proxy][player.UserId] or 0
+    if now - last < cd then return end
+    lastKick[proxy][player.UserId] = now
+    -- distance validation
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not (hrp and hrp:IsA("BasePart")) then return end
+    local dist = (hrp.Position - proxy.Position).Magnitude
+    if dist > ((destroyCfg.Distance or 12) + 2) then return end
+
+    local boards = proxy:FindFirstChild("Boards")
+    if not boards then return end
+    local children = boards:GetChildren()
+    if #children == 0 then return end
+
+    local toBreak = 1
+    if strong then
+        toBreak = math.min(destroyCfg.StrongBreakMax or 4, math.max(1, math.random(2, 3)))
+    elseif math.random() < (destroyCfg.DoubleBreakChance or 0) then
+        toBreak = 2
+    end
+
+    local eventsOk, Events = pcall(function() return require(game.ReplicatedStorage.Net.Events) end)
+    local Debris = game:GetService("Debris")
+
+    for i = 1, toBreak do
+        local list = boards:GetChildren()
+        if #list == 0 then break end
+        local pick = list[math.random(1, #list)]
+        if pick and pick:IsA("BasePart") then
+            if eventsOk and Events and Events.BoardFX then
+                Events.BoardFX:FireAllClients({ kind = "Kick", pos = pick.Position, mag = (destroyCfg.Shake and destroyCfg.Shake.Mag) or 0.4, dur = (destroyCfg.Shake and destroyCfg.Shake.Duration) or 0.1 })
+            end
+            pick.Parent = workspace
+            pick.CanCollide = false
+            pick.Anchored = false
+            pick.AssemblyLinearVelocity = Vector3.new((math.random()-0.5)*28, 18 + math.random()*10, (math.random()-0.5)*28)
+            pick.AssemblyAngularVelocity = Vector3.new(math.random(), math.random(), math.random()) * 8
+            Debris:AddItem(pick, 1.6)
+        end
+    end
+
+    updatePrompts(proxy, cfg, destroyCfg)
+end
+
+function BoardUpService.Attach(model: Model, cfg, destroyCfg)
     if not (model and model.Parent) then return end
     local openings = model:FindFirstChild("Openings")
     if not openings then return end
 
     -- Hook remote for hold-to-board behavior
     local eventsOk, Events = pcall(function() return require(game.ReplicatedStorage.Net.Events) end)
-    if eventsOk and Events and Events.BoardUp then
-        Events.BoardUp.OnServerEvent:Connect(function(player, proxy)
-            if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
-                placeBoard(player, proxy, cfg)
+        if eventsOk and Events then
+            Events.BoardUp.OnServerEvent:Connect(function(player, proxy)
+                if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
+                placeBoard(player, proxy, cfg, destroyCfg)
+                end
+            end)
+            if Events.BoardKick then
+                Events.BoardKick.OnServerEvent:Connect(function(player, proxy, strong)
+                    if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
+                        kickBoard(player, proxy, cfg, destroyCfg, strong == true)
+                    end
+                end)
             end
-        end)
-    end
+        end
 
     for _, proxy in ipairs(openings:GetChildren()) do
         if proxy:IsA("BasePart") then
             local prompt = proxy:FindFirstChildOfClass("ProximityPrompt")
             if prompt then
-                prompt.KeyboardKeyCode = (cfg and cfg.KeyCode) or DEFAULT.KeyCode
-                prompt.HoldDuration = (cfg and cfg.Hold) or DEFAULT.Hold
-                prompt.MaxActivationDistance = (cfg and cfg.Distance) or DEFAULT.Distance
-                -- Disable prompt if opening already sealed
-                local N, current = computeQuota(proxy, getCfg(cfg))
-                if current >= N then setPromptEnabled(proxy, false) end
-                -- Ensure a board is placed when a full hold completes (single-step)
+                -- Primary board prompt is already on the proxy (created in generator)
+                -- Configure it and add fallback Triggered handler
+                prompt.ActionText = "Board Up"
+                prompt.RequiresLineOfSight = false
                 prompt.Triggered:Connect(function(player)
-                    placeBoard(player, proxy, cfg)
+                    placeBoard(player, proxy, cfg, destroyCfg)
                 end)
             end
+            -- Kick prompt
+            local kp = ensureKickPrompt(proxy, destroyCfg)
+            kp.Triggered:Connect(function(player)
+                kickBoard(player, proxy, cfg, destroyCfg)
+            end)
+            updatePrompts(proxy, cfg, destroyCfg)
         end
     end
 end
 
 return BoardUpService
-]]></string>
-        </Properties>
-      </Item>
-      <Item class="ModuleScript" referent="13">
-        <Properties>
-          <string name="Name">ConstructionService</string>
-          <string name="Source"><![CDATA[-- ConstructionService: handles server-side construction generation
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000414e</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="13">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">ConstructionService</string>
+					<string name="ScriptGuid">{4686f1af-d928-46e5-98e0-831042f379b3}</string>
+					<ProtectedString name="Source"><![CDATA[-- ConstructionService: handles server-side construction generation
 -- Responsibility: listen for build requests and spawn a simple defensive box
 
 local Players = game:GetService("Players")
@@ -1637,6 +3988,7 @@ local function buildProceduralAt(origin: CFrame)
             Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0, FloorOffset = 0.5 },
             Debug = { Print = true, VisualizeRects = false, Randomize = true },
             BOARDUP = { PlankWidth = 1.5, PlankThickness = 0.2, Hold = 0.2, MaxBoardsPerOpening = 24, MaxPerMinute = 30, KeyCode = Enum.KeyCode.E, Distance = 12, Material = Enum.Material.WoodPlanks, Color = Color3.fromRGB(155,120,80) },
+            DESTROY = { KeyCode = Enum.KeyCode.Q, Cooldown = 0.25, MaxPerMinute = 60, Distance = 12, DoubleBreakChance = 0.25, StrongBreakMax = 4, Shake = { Mag = 0.5, Duration = 0.12 } },
         }
     end
 
@@ -1754,7 +4106,7 @@ local function buildProceduralAt(origin: CFrame)
     -- Attach board-up interactions
     pcall(function()
         local BoardUp = require(script.Parent:WaitForChild("BoardUpService"))
-        BoardUp.Attach(model, buildCfg.BOARDUP or {})
+        BoardUp.Attach(model, buildCfg.BOARDUP or {}, buildCfg.DESTROY or {})
     end)
 end
 
@@ -1811,18 +4163,34 @@ end
 ConstructionService.Init()
 
 return ConstructionService
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-    <Item class="Folder" referent="14">
-      <Properties>
-        <string name="Name">Gameplay</string>
-      </Properties>
-      <Item class="ModuleScript" referent="15">
-        <Properties>
-          <string name="Name">HitRegService</string>
-          <string name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000414f</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Folder" referent="14">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Gameplay</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004151</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="15">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">HitRegService</string>
+					<string name="ScriptGuid">{9e6c8643-7bc3-4eab-bf85-c6439e2b4a29}</string>
+					<ProtectedString name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local function getEvents()
     -- TODO: ISSUE #8 - Code Duplication: Remote event creation logic duplicated across multiple files
@@ -1955,13 +4323,22 @@ end))
 
 -- Cleanup on game shutdown
 game:BindToClose(cleanupConnections)
-]]></string>
-        </Properties>
-      </Item>
-      <Item class="ModuleScript" referent="16">
-        <Properties>
-          <string name="Name">ObjectiveService</string>
-          <string name="Source"><![CDATA[-- Objective: spawn, pickup, steal, carry-follow, deliver at Green spawn
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004152</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="16">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">ObjectiveService</string>
+					<string name="ScriptGuid">{93cff289-c449-47a9-8f3a-6fce58901634}</string>
+					<ProtectedString name="Source"><![CDATA[-- Objective: spawn, pickup, steal, carry-follow, deliver at Green spawn
 
 local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2421,14 +4798,23 @@ game:BindToClose(function()
 end)
 
 return ObjectiveService
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-    <Item class="ModuleScript" referent="17">
-      <Properties>
-        <string name="Name">LobbyManager</string>
-        <string name="Source">-- Manages lobby countdown when 2+ players are present
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004153</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="ModuleScript" referent="17">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">LobbyManager</string>
+				<string name="ScriptGuid">{253b14d7-4be4-4bcd-b6de-b7c7e2b5751e}</string>
+				<ProtectedString name="Source"><![CDATA[-- Manages lobby countdown when 2+ players are present
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -2497,7 +4883,7 @@ local function startCountdown()
     if RoundService.IsInMatch() then return end
 
     -- Check player count
-    if #Players:GetPlayers() &lt; 2 then
+    if #Players:GetPlayers() < 2 then
         stopCountdown()
         return
     end
@@ -2509,7 +4895,7 @@ local function startCountdown()
 
     countdownConnection = RunService.Heartbeat:Connect(function()
         -- Check if we still have enough players
-        if #Players:GetPlayers() &lt; 2 then
+        if #Players:GetPlayers() < 2 then
             stopCountdown()
             return
         end
@@ -2579,19 +4965,29 @@ end
 -- Initial broadcast when server starts
 task.spawn(function()
     task.wait(2)
-    if #Players:GetPlayers() &lt; 2 then
+    if #Players:GetPlayers() < 2 then
         broadcast({ text = "Waiting for players..." })
     end
 end)
 
-return LobbyManager</string>
-      </Properties>
-    </Item>
-    <Item class="Script" referent="18">
-      <Properties>
-        <string name="Name">Main</string>
-        <token name="RunContext">0</token>
-        <string name="Source"><![CDATA[-- Bootstraps lobby countdown and round system
+return LobbyManager]]></ProtectedString>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004154</UniqueId>
+			</Properties>
+		</Item>
+		<Item class="Script" referent="18">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Disabled">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">Main</string>
+				<token name="RunContext">0</token>
+				<string name="ScriptGuid">{6c491468-b020-4dee-aad4-8fad32f23430}</string>
+				<ProtectedString name="Source"><![CDATA[-- Bootstraps lobby countdown and round system
 
 local Players = game:GetService("Players")
 
@@ -2607,17 +5003,33 @@ end)
 -- Initialize lobby manager on server start
 task.wait(1) -- Let services initialize
 LobbyManager.CheckAndStart()
-]]></string>
-      </Properties>
-    </Item>
-    <Item class="Folder" referent="19">
-      <Properties>
-        <string name="Name">Round</string>
-      </Properties>
-      <Item class="ModuleScript" referent="20">
-        <Properties>
-          <string name="Name">RoundService</string>
-          <string name="Source"><![CDATA[local Players = game:GetService("Players")
+]]></ProtectedString>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004155</UniqueId>
+			</Properties>
+		</Item>
+		<Item class="Folder" referent="19">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">Round</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004156</UniqueId>
+			</Properties>
+			<Item class="ModuleScript" referent="20">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">RoundService</string>
+					<string name="ScriptGuid">{45b9db2d-09e3-487a-9c3e-3adb603f27e6}</string>
+					<ProtectedString name="Source"><![CDATA[local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Simple config - avoid dependency on ConfigLoader
@@ -2796,26 +5208,45 @@ function RoundService.PlayRound(onUpdate)
 end
 
 return RoundService
-]]></string>
-        </Properties>
-      </Item>
-      <Item class="ModuleScript" referent="21">
-        <Properties>
-          <string name="Name">RoundState</string>
-          <string name="Source"><![CDATA[-- Round state enum
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004157</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="ModuleScript" referent="21">
+				<Properties>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<Content name="LinkedSource"><null></null></Content>
+					<string name="Name">RoundState</string>
+					<string name="ScriptGuid">{658f124c-ff92-49d2-8127-9dc78389a152}</string>
+					<ProtectedString name="Source"><![CDATA[-- Round state enum
 export type State = "Lobby" | "Prep" | "Live" | "End"
 local State = { Lobby = "Lobby", Prep = "Prep", Live = "Live", End = "End" }
 return State
 
-]]></string>
-        </Properties>
-      </Item>
-    </Item>
-    <Item class="Script" referent="22">
-      <Properties>
-        <string name="Name">Setup</string>
-        <token name="RunContext">0</token>
-        <string name="Source"><![CDATA[-- Game bootstrap: teams, baseplate, spawns, and team assignment
+]]></ProtectedString>
+					<int64 name="SourceAssetId">-1</int64>
+					<BinaryString name="Tags"></BinaryString>
+					<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004158</UniqueId>
+				</Properties>
+			</Item>
+		</Item>
+		<Item class="Script" referent="22">
+			<Properties>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<bool name="Disabled">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<Content name="LinkedSource"><null></null></Content>
+				<string name="Name">Setup</string>
+				<token name="RunContext">0</token>
+				<string name="ScriptGuid">{bf813eaf-2b85-44c6-933f-beec80e6fea3}</string>
+				<ProtectedString name="Source"><![CDATA[-- Game bootstrap: teams, baseplate, spawns, and team assignment
 local Players = game:GetService("Players")
 local TeamsService = game:GetService("Teams")
 local StarterPlayer = game:GetService("StarterPlayer")
@@ -3017,823 +5448,162 @@ Players.PlayerAdded:Connect(function(plr)
     task.wait(0.2)
     assignPlayerToTeam(plr)
 end)
-]]></string>
-      </Properties>
-    </Item>
-  </Item>
-  <Item class="StarterPlayer" referent="23">
-    <Properties>
-      <string name="Name">StarterPlayer</string>
-    </Properties>
-    <Item class="StarterCharacterScripts" referent="24">
-      <Properties>
-        <string name="Name">StarterCharacterScripts</string>
-      </Properties>
-    </Item>
-    <Item class="StarterPlayerScripts" referent="25">
-      <Properties>
-        <string name="Name">StarterPlayerScripts</string>
-      </Properties>
-      <Item class="LocalScript" referent="26">
-        <Properties>
-          <string name="Name">DisableChat</string>
-          <string name="Source"><![CDATA[-- Immediate chat disabling to prevent ChatScript errors
-local StarterGui = game:GetService("StarterGui")
-
--- Disable chat immediately, before other scripts can interfere
-pcall(function()
-    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-end)
-
--- Additional cleanup after a brief delay
-task.spawn(function()
-    task.wait(1)
-
-    -- Ensure chat stays disabled
-    pcall(function()
-        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-    end)
-
-    -- Try to clear any remaining chat elements
-    pcall(function()
-        local success = pcall(function()
-            StarterGui:SetCore("ChatActive", false)
-        end)
-        if not success then
-            -- If ChatActive doesn't work, try alternative
-            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-        end
-    end)
-end)
-
-]]></string>
-        </Properties>
-      </Item>
-      <Item class="LocalScript" referent="27">
-        <Properties>
-          <string name="Name">DisableClassicChat</string>
-          <string name="Source"><![CDATA[-- This script is now disabled to avoid conflicts with Roblox's core chat systems
--- All chat disabling is handled by DisableChat.client.lua using proper APIs
-
--- Keeping this file for compatibility but doing nothing to avoid errors
-print("[DisableClassicChat] Chat disabling handled by main DisableChat script")
-]]></string>
-        </Properties>
-      </Item>
-      <Item class="Folder" referent="28">
-        <Properties>
-          <string name="Name">Input</string>
-        </Properties>
-        <Item class="LocalScript" referent="29">
-          <Properties>
-            <string name="Name">BoardUp</string>
-            <string name="Source"><![CDATA[-- Client helper: while holding the Board Up prompt key, repeatedly ask server to place boards.
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ProximityPromptService = game:GetService("ProximityPromptService")
-local UIS = game:GetService("UserInputService")
-
-local Events do
-    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
-    if ok then Events = mod end
-end
-
-local interval = 0.2
-local boardKey = Enum.KeyCode.E
-do
-    local ok, ConfigLoader = pcall(function() return require(ReplicatedStorage.Shared.ConfigLoader) end)
-    if ok then
-        local cfg = ConfigLoader.Load("BoardUpClient")
-        if cfg and cfg.CONSTRUCTION and cfg.CONSTRUCTION.BOARDUP then
-            if cfg.CONSTRUCTION.BOARDUP.Hold then
-                interval = math.max(0.05, cfg.CONSTRUCTION.BOARDUP.Hold)
-            end
-            if cfg.CONSTRUCTION.BOARDUP.KeyCode then
-                boardKey = cfg.CONSTRUCTION.BOARDUP.KeyCode
-            end
-        end
-    end
-end
-
-local activePrompt: ProximityPrompt? = nil
-local running = false
-
-local function isOpeningPrompt(prompt: ProximityPrompt)
-    local p = prompt and prompt.Parent
-    return p and p:IsA("BasePart") and p.Parent and p.Parent.Name == "Openings"
-end
-
-local function stopLoop()
-    running = false
-    activePrompt = nil
-end
-
-local function startLoop(prompt: ProximityPrompt)
-    if running then return end
-    if not Events or not Events.BoardUp then return end
-    if not isOpeningPrompt(prompt) then return end
-    running = true
-    activePrompt = prompt
-    task.spawn(function()
-        -- Wait one interval before the first placement so each board takes full hold time
-        task.wait(interval)
-        while running and activePrompt == prompt and prompt.Enabled do
-            -- If user stopped holding the key, stop
-            if not UIS:IsKeyDown(boardKey) then break end
-            Events.BoardUp:FireServer(prompt.Parent)
-            task.wait(interval)
-        end
-        end)
-end
-
-ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-    startLoop(prompt)
-end)
-
--- Do not stop on hold ended; keep running if key is still down (we drive our own cadence)
-
--- Do not stop merely because the engine hides the prompt briefly; rely on key release instead
-]]></string>
-          </Properties>
-        </Item>
-        <Item class="LocalScript" referent="30">
-          <Properties>
-            <string name="Name">Construction</string>
-            <string name="Source"><![CDATA[-- Client input: press B to request construction
-
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Events
-do
-    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
-    if ok and mod then Events = mod else
-        local folder = ReplicatedStorage:WaitForChild("Remotes", 5)
-        local function get(name)
-            return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
-        end
-        Events = { Construction = get("ConstructionRequest") }
-    end
-end
-
-local debounce = false
-local COOLDOWN = 0.5
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.B then
-        if debounce then return end
-        debounce = true
-        if Events and Events.Construction then
-            print("[Construction] Sending build request (B pressed)")
-            Events.Construction:FireServer()
-        else
-            warn("[Construction] Remote missing; server may not be ready")
-        end
-        task.delay(COOLDOWN, function() debounce = false end)
-    end
-end)
-]]></string>
-          </Properties>
-        </Item>
-        <Item class="LocalScript" referent="31">
-          <Properties>
-            <string name="Name">InputController</string>
-            <string name="Source"><![CDATA[local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local function getEvents()
-    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
-    if ok and mod then return mod end
-    local folder = ReplicatedStorage:WaitForChild("Remotes", 5)
-    local function get(name)
-        return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
-    end
-    return {
-        FireWeapon = get("FireWeapon"),
-    }
-end
-
--- Input validation functions
-local function validateVector3(vec)
-    if typeof(vec) ~= "Vector3" then return false end
-    if vec.X ~= vec.X or vec.Y ~= vec.Y or vec.Z ~= vec.Z then return false end -- Check for NaN
-    return true
-end
-
-local function validateWeaponInput()
-    local cam = workspace.CurrentCamera
-    if not cam then return false, "No camera" end
-
-    local origin = cam.CFrame.Position
-    local dir = cam.CFrame.LookVector * 500
-
-    if not validateVector3(origin) or not validateVector3(dir) then
-        return false, "Invalid camera vectors"
-    end
-
-    return true, origin, dir
-end
-
-local Events = getEvents()
-
-local firing = false
-
-UserInputService.InputBegan:Connect(function(io, gpe)
-    if gpe then return end
-    if io.UserInputType == Enum.UserInputType.MouseButton1 then
-        firing = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(io)
-    if io.UserInputType == Enum.UserInputType.MouseButton1 then
-        firing = false
-    end
-end)
-
--- TODO: ISSUE #10 - Performance Issue: RenderStepped runs every frame for input
--- Should use heartbeat or input service events instead of polling every frame
-game:GetService("RunService").RenderStepped:Connect(function()
-    if not firing then return end
-
-    local isValid, origin, dir = validateWeaponInput()
-    if not isValid then
-        warn("[InputController] Invalid weapon input: " .. origin)
-        return
-    end
-
-    -- Add error handling for server communication
-    local success, result = pcall(function()
-        return Events.FireWeapon:FireServer({ origin = origin, dir = dir, weaponName = "Carbine" })
-    end)
-
-    if not success then
-        warn("[InputController] Failed to fire weapon: " .. result)
-    end
-end)
-]]></string>
-          </Properties>
-        </Item>
-      </Item>
-      <Item class="Folder" referent="32">
-        <Properties>
-          <string name="Name">UI</string>
-        </Properties>
-        <Item class="LocalScript" referent="33">
-          <Properties>
-            <string name="Name">Hud</string>
-            <string name="Source">-- Enhanced HUD with clear score display, timer, and team assignment
-
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Camera = workspace.CurrentCamera
-
-local function getEvents()
-    local ok, mod = pcall(function() return require(ReplicatedStorage.Net.Events) end)
-    if ok and mod then return mod end
-    local folder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:WaitForChild("Remotes", 5)
-    local function get(name)
-        return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
-    end
-    return {
-        RoundChanged = get("RoundChanged"),
-        Objective = get("ObjectiveEvent"),
-    }
-end
-
-local Events = getEvents()
-
-local player = Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Name = "HUD"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 5
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
--- Wait for PlayerGui to be ready and avoid conflicts
-local playerGui = player:WaitForChild("PlayerGui")
-
--- Clean up any existing HUD
-local existingHUD = playerGui:FindFirstChild("HUD")
-if existingHUD then
-    existingHUD:Destroy()
-end
-
--- Add GUI to PlayerGui after a brief delay to avoid styling conflicts
-task.wait(0.5)
-gui.Parent = playerGui
-
--- Main container (wider, more prominent)
-local container = Instance.new("Frame")
-container.Size = UDim2.new(0, 460, 0, 100)
-container.AnchorPoint = Vector2.new(0.5, 0)
-container.Position = UDim2.new(0.5, 0, 0, 20)
-container.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-container.BackgroundTransparency = 0.05
-container.BorderSizePixel = 0
-container.Parent = gui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 16)
-corner.Parent = container
-
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(255, 255, 255)
-stroke.Transparency = 0.9
-stroke.Parent = container
-
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(28,28,35)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(22,22,28)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(18,18,24))
-}
-gradient.Rotation = 90
-gradient.Parent = container
-
--- Score display section
-local scoreSection = Instance.new("Frame")
-scoreSection.Size = UDim2.new(1, -40, 0, 40)
-scoreSection.Position = UDim2.new(0, 20, 0, 12)
-scoreSection.BackgroundTransparency = 1
-scoreSection.Parent = container
-
--- Attack team score
-local attackFrame = Instance.new("Frame")
-attackFrame.Size = UDim2.new(0, 160, 1, 0)
-attackFrame.Position = UDim2.new(0, 0, 0, 0)
-attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
-attackFrame.BackgroundTransparency = 0.7
-attackFrame.BorderSizePixel = 0
-attackFrame.Parent = scoreSection
-
-local attackCorner = Instance.new("UICorner")
-attackCorner.CornerRadius = UDim.new(0, 10)
-attackCorner.Parent = attackFrame
-
-local attackStroke = Instance.new("UIStroke")
-attackStroke.Thickness = 3
-attackStroke.Color = Color3.fromRGB(255, 100, 100)
-attackStroke.Transparency = 1  -- Initially transparent
-attackStroke.Parent = attackFrame
-
-local attackGradient = Instance.new("UIGradient")
-attackGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
-}
-attackGradient.Rotation = 90
-attackGradient.Parent = attackFrame
-
-local attackTeamLabel = Instance.new("TextLabel")
-attackTeamLabel.Size = UDim2.new(0.55, 0, 0.5, 0)
-attackTeamLabel.Position = UDim2.new(0, 12, 0, 0)
-attackTeamLabel.BackgroundTransparency = 1
-attackTeamLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
-attackTeamLabel.TextXAlignment = Enum.TextXAlignment.Left
-attackTeamLabel.Font = Enum.Font.SourceSansSemibold
-attackTeamLabel.TextSize = 12
-attackTeamLabel.Text = "ATTACK"
-attackTeamLabel.Parent = attackFrame
-
-local attackScoreLabel = Instance.new("TextLabel")
-attackScoreLabel.Size = UDim2.new(0.45, -12, 1, 0)
-attackScoreLabel.Position = UDim2.new(0.55, 0, 0, 0)
-attackScoreLabel.BackgroundTransparency = 1
-attackScoreLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-attackScoreLabel.TextXAlignment = Enum.TextXAlignment.Right
-attackScoreLabel.Font = Enum.Font.SourceSansBold
-attackScoreLabel.TextSize = 28
-attackScoreLabel.Text = "0"
-attackScoreLabel.Parent = attackFrame
-
-local attackIcon = Instance.new("TextLabel")
-attackIcon.Size = UDim2.new(0.55, 0, 0.5, 0)
-attackIcon.Position = UDim2.new(0, 12, 0.5, 0)
-attackIcon.BackgroundTransparency = 1
-attackIcon.TextColor3 = Color3.fromRGB(160, 180, 200)
-attackIcon.TextXAlignment = Enum.TextXAlignment.Left
-attackIcon.Font = Enum.Font.SourceSansSemibold
-attackIcon.TextSize = 11
-attackIcon.Text = "⚔️ OFFENSIVE"
-attackIcon.Parent = attackFrame
-
--- Defense team score
-local defenseFrame = Instance.new("Frame")
-defenseFrame.Size = UDim2.new(0, 160, 1, 0)
-defenseFrame.AnchorPoint = Vector2.new(1, 0)
-defenseFrame.Position = UDim2.new(1, 0, 0, 0)
-defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-defenseFrame.BackgroundTransparency = 0.7
-defenseFrame.BorderSizePixel = 0
-defenseFrame.Parent = scoreSection
-
-local defenseCorner = Instance.new("UICorner")
-defenseCorner.CornerRadius = UDim.new(0, 10)
-defenseCorner.Parent = defenseFrame
-
-local defenseStroke = Instance.new("UIStroke")
-defenseStroke.Thickness = 3
-defenseStroke.Color = Color3.fromRGB(100, 255, 100)
-defenseStroke.Transparency = 1  -- Initially transparent
-defenseStroke.Parent = defenseFrame
-
-local defenseGradient = Instance.new("UIGradient")
-defenseGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,200,200))
-}
-defenseGradient.Rotation = 90
-defenseGradient.Parent = defenseFrame
-
-local defenseScoreLabel = Instance.new("TextLabel")
-defenseScoreLabel.Size = UDim2.new(0.45, -12, 1, 0)
-defenseScoreLabel.Position = UDim2.new(0, 12, 0, 0)
-defenseScoreLabel.BackgroundTransparency = 1
-defenseScoreLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-defenseScoreLabel.TextXAlignment = Enum.TextXAlignment.Left
-defenseScoreLabel.Font = Enum.Font.SourceSansBold
-defenseScoreLabel.TextSize = 28
-defenseScoreLabel.Text = "0"
-defenseScoreLabel.Parent = defenseFrame
-
-local defenseTeamLabel = Instance.new("TextLabel")
-defenseTeamLabel.Size = UDim2.new(0.55, 0, 0.5, 0)
-defenseTeamLabel.AnchorPoint = Vector2.new(1, 0)
-defenseTeamLabel.Position = UDim2.new(1, -12, 0, 0)
-defenseTeamLabel.BackgroundTransparency = 1
-defenseTeamLabel.TextColor3 = Color3.fromRGB(220, 180, 180)
-defenseTeamLabel.TextXAlignment = Enum.TextXAlignment.Right
-defenseTeamLabel.Font = Enum.Font.SourceSansSemibold
-defenseTeamLabel.TextSize = 12
-defenseTeamLabel.Text = "DEFENSE"
-defenseTeamLabel.Parent = defenseFrame
-
-local defenseIcon = Instance.new("TextLabel")
-defenseIcon.Size = UDim2.new(0.55, 0, 0.5, 0)
-defenseIcon.AnchorPoint = Vector2.new(1, 0)
-defenseIcon.Position = UDim2.new(1, -12, 0.5, 0)
-defenseIcon.BackgroundTransparency = 1
-defenseIcon.TextColor3 = Color3.fromRGB(200, 160, 160)
-defenseIcon.TextXAlignment = Enum.TextXAlignment.Right
-defenseIcon.Font = Enum.Font.SourceSansSemibold
-defenseIcon.TextSize = 11
-defenseIcon.Text = "DEFENSIVE 🛡️"
-defenseIcon.Parent = defenseFrame
-
--- VS divider
-local vsFrame = Instance.new("Frame")
-vsFrame.Size = UDim2.new(0, 60, 0, 30)
-vsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-vsFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-vsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-vsFrame.BorderSizePixel = 0
-vsFrame.Parent = scoreSection
-
-local vsCorner = Instance.new("UICorner")
-vsCorner.CornerRadius = UDim.new(0.5, 0)
-vsCorner.Parent = vsFrame
-
-local vsStroke = Instance.new("UIStroke")
-vsStroke.Thickness = 2
-vsStroke.Color = Color3.fromRGB(255, 255, 255)
-vsStroke.Transparency = 0.8
-vsStroke.Parent = vsFrame
-
-local vsLabel = Instance.new("TextLabel")
-vsLabel.Size = UDim2.new(1, 0, 1, 0)
-vsLabel.BackgroundTransparency = 1
-vsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-vsLabel.Font = Enum.Font.SourceSansBold
-vsLabel.TextSize = 16
-vsLabel.Text = "VS"
-vsLabel.Parent = vsFrame
-
--- Bottom info section
-local infoSection = Instance.new("Frame")
-infoSection.Size = UDim2.new(1, -40, 0, 36)
-infoSection.Position = UDim2.new(0, 20, 1, -44)
-infoSection.BackgroundTransparency = 1
-infoSection.Parent = container
-
-
--- Timer display
-local timerCard = Instance.new("Frame")
-timerCard.Size = UDim2.new(0, 140, 1, 0)
-timerCard.AnchorPoint = Vector2.new(1, 0)
-timerCard.Position = UDim2.new(1, 0, 0, 0)
-timerCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-timerCard.BackgroundTransparency = 0.3
-timerCard.BorderSizePixel = 0
-timerCard.Parent = infoSection
-
-local timerCardCorner = Instance.new("UICorner")
-timerCardCorner.CornerRadius = UDim.new(0, 10)
-timerCardCorner.Parent = timerCard
-
-local timerIcon = Instance.new("TextLabel")
-timerIcon.Size = UDim2.new(0, 30, 1, 0)
-timerIcon.Position = UDim2.new(0, 8, 0, 0)
-timerIcon.BackgroundTransparency = 1
-timerIcon.TextColor3 = Color3.fromRGB(180, 180, 180)
-timerIcon.Font = Enum.Font.SourceSansSemibold
-timerIcon.TextSize = 16
-timerIcon.Text = "⏱"
-timerIcon.Parent = timerCard
-
-local timerText = Instance.new("TextLabel")
-timerText.Size = UDim2.new(1, -38, 1, 0)
-timerText.Position = UDim2.new(0, 38, 0, 0)
-timerText.BackgroundTransparency = 1
-timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
-timerText.TextXAlignment = Enum.TextXAlignment.Center
-timerText.Font = Enum.Font.SourceSansBold
-timerText.TextSize = 18
-timerText.Text = "0:00"
-timerText.Parent = timerCard
-
--- Phase indicator
-local phaseLabel = Instance.new("TextLabel")
-phaseLabel.Size = UDim2.new(0, 160, 1, 0)
-phaseLabel.AnchorPoint = Vector2.new(0.5, 0)
-phaseLabel.Position = UDim2.new(0.5, 0, 0, 0)
-phaseLabel.BackgroundTransparency = 1
-phaseLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
-phaseLabel.Font = Enum.Font.SourceSansSemibold
-phaseLabel.TextSize = 13
-phaseLabel.Text = "WAITING"
-phaseLabel.Parent = infoSection
-
--- Enhanced toast notification
-local toastFrame = Instance.new("Frame")
-toastFrame.Size = UDim2.new(0, 400, 0, 42)
-toastFrame.AnchorPoint = Vector2.new(0.5, 0)
-toastFrame.Position = UDim2.new(0.5, 0, 0, 130)
-toastFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-toastFrame.BackgroundTransparency = 0
-toastFrame.BorderSizePixel = 0
-toastFrame.Visible = false
-toastFrame.Parent = gui
-
-local toastCorner = Instance.new("UICorner")
-toastCorner.CornerRadius = UDim.new(0, 12)
-toastCorner.Parent = toastFrame
-
-local toastStroke = Instance.new("UIStroke")
-toastStroke.Thickness = 2
-toastStroke.Color = Color3.fromRGB(255, 200, 100)
-toastStroke.Transparency = 0.3
-toastStroke.Parent = toastFrame
-
-local toastGradient = Instance.new("UIGradient")
-toastGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(180,180,180))
-}
-toastGradient.Rotation = 90
-toastGradient.Parent = toastFrame
-
-local toastText = Instance.new("TextLabel")
-toastText.Size = UDim2.new(1, -20, 1, 0)
-toastText.Position = UDim2.new(0, 10, 0, 0)
-toastText.BackgroundTransparency = 1
-toastText.TextColor3 = Color3.fromRGB(255, 255, 255)
-toastText.Font = Enum.Font.SourceSansBold
-toastText.TextSize = 16
-toastText.Text = ""
-toastText.Parent = toastFrame
-
--- Arrow removed - no directional guidance
-
--- State variables
-local currentState = "Lobby"
-local scores = {A = 0, B = 0}
-local roundTimeRemaining = nil
-local roundPhase = nil
-local objectiveTimeLimit = 60
-local objectiveStartTime = 0
-local isCarrier = false
-local greenSpawnPos = nil
-local redSpawnPos = nil
-
-local function formatTime(s)
-    if not s or s &lt; 0 then return "--:--" end
-    local m = math.floor(s/60)
-    local sec = math.floor(s % 60)
-    return string.format("%d:%02d", m, sec)
-end
-
-local function animateToast(text, duration, color)
-    toastText.Text = text or ""
-    toastFrame.Visible = text ~= nil and text ~= ""
-
-    if toastFrame.Visible then
-        -- Set color
-        local toastColor = color or Color3.fromRGB(255, 200, 100)
-        toastStroke.Color = toastColor
-
-        -- Animate in
-        toastFrame.Position = UDim2.new(0.5, 0, 0, 110)
-        local tweenIn = TweenService:Create(
-            toastFrame,
-            TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-            {Position = UDim2.new(0.5, 0, 0, 130)}
-        )
-        tweenIn:Play()
-
-        -- Schedule hide
-        task.delay(duration or 2, function()
-            local tweenOut = TweenService:Create(
-                toastFrame,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Position = UDim2.new(0.5, 0, 0, 110)}
-            )
-            tweenOut:Play()
-            tweenOut.Completed:Connect(function()
-                toastFrame.Visible = false
-            end)
-        end)
-    end
-end
-
-local function updatePanel()
-    -- Update scores
-    attackScoreLabel.Text = tostring(scores.A or 0)
-    defenseScoreLabel.Text = tostring(scores.B or 0)
-
-    -- Update team indicator (removed - now handled by score styling)
-    local team = Players.LocalPlayer.Team
-    if team then
-        local teamColor = team.TeamColor.Color
-        -- Team indicator removed - functionality moved to score styling
-
-        -- Highlight active team score with team colors
-        if team.Name == "Red" then
-            -- Red team: red border and transparent red background for attack score
-            attackFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-            attackFrame.BackgroundTransparency = 0.3  -- Transparent red
-            attackStroke.Transparency = 0  -- Show red border
-            defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-            defenseFrame.BackgroundTransparency = 0.7  -- Default transparency
-            defenseStroke.Transparency = 1  -- Hide green border
-        elseif team.Name == "Green" then
-            -- Green team: green border and transparent green background for defense score
-            defenseFrame.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-            defenseFrame.BackgroundTransparency = 0.3  -- Transparent green
-            defenseStroke.Transparency = 0  -- Show green border
-            attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
-            attackFrame.BackgroundTransparency = 0.7  -- Default transparency
-            attackStroke.Transparency = 1  -- Hide red border
-        end
-    else
-        -- Spectator: reset both frames to default styling
-        attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
-        attackFrame.BackgroundTransparency = 0.7
-        attackStroke.Transparency = 1  -- Hide red border
-        defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-        defenseFrame.BackgroundTransparency = 0.7
-        defenseStroke.Transparency = 1  -- Hide green border
-    end
-
-    -- Update timer
-    local remain = roundTimeRemaining
-    if remain == nil and currentState == "Live" and objectiveStartTime > 0 then
-        local elapsed = os.clock() - objectiveStartTime
-        remain = math.max(0, objectiveTimeLimit - elapsed)
-    end
-
-    if remain then
-        timerText.Text = formatTime(remain)
-        -- Flash when low time
-        if remain &lt;= 10 then
-            timerText.TextColor3 = Color3.fromRGB(255, 100, 100)
-            timerIcon.TextColor3 = Color3.fromRGB(255, 100, 100)
-        else
-            timerText.TextColor3 = Color3.fromRGB(255, 255, 255)
-            timerIcon.TextColor3 = Color3.fromRGB(180, 180, 180)
-        end
-    else
-        timerText.Text = "--:--"
-        timerText.TextColor3 = Color3.fromRGB(180, 180, 180)
-        timerIcon.TextColor3 = Color3.fromRGB(150, 150, 150)
-    end
-
-    -- Update phase (don't override if already set by message in onRoundChanged)
-    local phase = roundPhase or currentState
-    if phase == "Lobby" then
-        -- Keep existing text if it's a special message, otherwise show default
-        if not phaseLabel.Text:find("WAITING") and not phaseLabel.Text:find("STARTING") then
-            phaseLabel.Text = "🏠 LOBBY"
-            phaseLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-        end
-    elseif phase == "Live" or phase == "InProgress" then
-        phaseLabel.Text = "🎮 LIVE"
-        phaseLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    elseif phase == "Intermission" then
-        phaseLabel.Text = "⏸ BREAK"
-        phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-    elseif phase == "Prep" then
-        phaseLabel.Text = "⏱ GET READY"
-        phaseLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
-    elseif phase == "End" then
-        phaseLabel.Text = "🏆 ROUND OVER"
-        phaseLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    elseif phase == "MatchComplete" then
-        phaseLabel.Text = "🎯 MATCH COMPLETE"
-        phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-    else
-        if phase and phase ~= "" then
-            phaseLabel.Text = string.upper(phase)
-            phaseLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-        end
-    end
-end
-
-local function onRoundChanged(payload)
-    scores = payload and payload.scores or scores
-    currentState = payload and payload.state or currentState
-    roundTimeRemaining = payload and payload.timeRemaining or nil
-    roundPhase = payload and payload.phase or nil
-
-    -- Handle lobby messages
-    if payload and payload.message then
-        -- Update phase label with the message (e.g., "Waiting for players..." or "Match starting in...")
-        phaseLabel.Text = string.upper(payload.message)
-        if payload.message:find("Waiting") then
-            phaseLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-        elseif payload.message:find("starting") then
-            phaseLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-        end
-    end
-
-    updatePanel()
-end
-
-local function onObjectiveEvent(payload)
-    if payload.type == "ObjectiveSpawned" then
-        objectiveTimeLimit = payload.timeLimit or 60
-        objectiveStartTime = os.clock()
-        greenSpawnPos = payload.greenSpawn or (workspace:FindFirstChild("GreenSpawn") and workspace.GreenSpawn.Position) or greenSpawnPos
-        redSpawnPos = payload.redSpawn or (workspace:FindFirstChild("RedSpawn") and workspace.RedSpawn.Position) or redSpawnPos
-        animateToast("🎯 OBJECTIVE SPAWNED", 2, Color3.fromRGB(100, 255, 100))
-    elseif payload.type == "ObjectiveDelivered" then
-        isCarrier = false
-        animateToast("✅ OBJECTIVE DELIVERED", 2.5, Color3.fromRGB(100, 255, 100))
-    elseif payload.type == "TimeUp" then
-        animateToast("⏰ TIME'S UP", 2, Color3.fromRGB(255, 100, 100))
-    elseif payload.type == "Carry" then
-        isCarrier = (payload.by == Players.LocalPlayer.UserId)
-        if isCarrier then
-            local t = Players.LocalPlayer.Team
-            if t and t.Name == "Red" then
-                animateToast("💎 CARRYING - GO TO RED SPAWN", 3, Color3.fromRGB(255, 220, 50))
-            else
-                animateToast("💎 CARRYING - AVOID RED TEAM", 3, Color3.fromRGB(255, 220, 50))
-            end
-        else
-            local who = Players:GetPlayerByUserId(payload.by)
-            if who and Players.LocalPlayer.Team and who.Team == Players.LocalPlayer.Team then
-                animateToast("👥 ALLY HAS OBJECTIVE", 1.5, Color3.fromRGB(100, 200, 255))
-            else
-                animateToast("⚠️ ENEMY HAS OBJECTIVE", 1.5, Color3.fromRGB(255, 100, 100))
-            end
-        end
-    elseif payload.type == "Dropped" then
-        if payload.by == Players.LocalPlayer.UserId then
-            isCarrier = false
-        end
-        animateToast("📦 OBJECTIVE DROPPED", 1.5, Color3.fromRGB(200, 200, 100))
-    elseif payload.type == "Stolen" then
-        if payload.by == Players.LocalPlayer.UserId then
-            isCarrier = true
-            animateToast("⚡ STOLEN - RUN!", 2.5, Color3.fromRGB(255, 100, 50))
-        elseif payload.from == Players.LocalPlayer.UserId then
-            isCarrier = false
-            animateToast("❌ STOLEN FROM YOU", 2, Color3.fromRGB(255, 50, 50))
-        else
-            animateToast("🔄 OBJECTIVE STOLEN", 2, Color3.fromRGB(255, 150, 50))
-        end
-    end
-end
-
-if Events.RoundChanged then Events.RoundChanged.OnClientEvent:Connect(onRoundChanged) end
-if Events.Objective then Events.Objective.OnClientEvent:Connect(onObjectiveEvent) end
-
--- React to team changes
-Players.LocalPlayer:GetPropertyChangedSignal("Team"):Connect(updatePanel)
-
--- Update panel
-RunService.RenderStepped:Connect(function()
-    updatePanel()
-end)</string>
-          </Properties>
-        </Item>
-      </Item>
-    </Item>
-  </Item>
+]]></ProtectedString>
+				<int64 name="SourceAssetId">-1</int64>
+				<BinaryString name="Tags"></BinaryString>
+				<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004159</UniqueId>
+			</Properties>
+		</Item>
+	</Item>
+	<Item class="ServerStorage" referent="RBX725a767cbb28457facc4e7bb1fe3c06d">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ServerStorage</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004121</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="ServiceVisibilityService" referent="RBX4386a581b59e42f9b20504b3c7195b48">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<BinaryString name="HiddenServices">AAAAAA==</BinaryString>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ServiceVisibilityService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004126</UniqueId>
+			<BinaryString name="VisibleServices">AAAAAA==</BinaryString>
+		</Properties>
+	</Item>
+	<Item class="HttpService" referent="RBX3fa7651c6dce4d9e8f78509d9878c5aa">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="HttpEnabled">false</bool>
+			<string name="Name">HttpService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004140</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="TestService" referent="RBX85579874792943f2987f6d95c877f250">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<bool name="AutoRuns">true</bool>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<string name="Description"></string>
+			<bool name="ExecuteWithStudioRun">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<bool name="IsPhysicsEnvironmentalThrottled">true</bool>
+			<bool name="IsSleepAllowed">true</bool>
+			<string name="Name">TestService</string>
+			<int name="NumberOfPlayers">0</int>
+			<double name="SimulateSecondsLag">0</double>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<bool name="ThrottlePhysicsToRealtime">true</bool>
+			<double name="Timeout">10</double>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004192</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="UGCAvatarService" referent="RBX8ff8df42d9794b60b762116591089547">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">UGCAvatarService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004196</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="Lighting" referent="RBXb5ab9f333d0b4766b3edb7f669877a91">
+		<Properties>
+			<Color3 name="Ambient">
+				<R>0.5</R>
+				<G>0.5</G>
+				<B>0.5</B>
+			</Color3>
+			<BinaryString name="AttributesSerialize">AQAAACYAAABSQlhfTGlnaHRpbmdUZWNobm9sb2d5VW5pZmllZE1pZ3JhdGlvbgMB</BinaryString>
+			<float name="Brightness">1</float>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<Color3 name="ColorShift_Bottom">
+				<R>0</R>
+				<G>0</G>
+				<B>0</B>
+			</Color3>
+			<Color3 name="ColorShift_Top">
+				<R>0</R>
+				<G>0</G>
+				<B>0</B>
+			</Color3>
+			<bool name="DefinesCapabilities">false</bool>
+			<float name="EnvironmentDiffuseScale">0</float>
+			<float name="EnvironmentSpecularScale">0</float>
+			<float name="ExposureCompensation">0</float>
+			<token name="ExtendLightRangeTo120">0</token>
+			<Color3 name="FogColor">
+				<R>0.75</R>
+				<G>0.75</G>
+				<B>0.75</B>
+			</Color3>
+			<float name="FogEnd">100000</float>
+			<float name="FogStart">0</float>
+			<float name="GeographicLatitude">41.7332993</float>
+			<bool name="GlobalShadows">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<token name="LightingStyle">1</token>
+			<string name="Name">Lighting</string>
+			<Color3 name="OutdoorAmbient">
+				<R>0.5</R>
+				<G>0.5</G>
+				<B>0.5</B>
+			</Color3>
+			<bool name="Outlines">true</bool>
+			<bool name="PrioritizeLightingQuality">false</bool>
+			<float name="ShadowSoftness">0.5</float>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<token name="Technology">2</token>
+			<string name="TimeOfDay">14:00:00</string>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a00004199</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="VideoService" referent="RBXc978227df6b34868afad9887c813dbfc">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">VideoService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000419c</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="LodDataService" referent="RBXc15034beceb547e98bab8741ef716cde">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">LodDataService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+			<UniqueId name="UniqueId">6d82b5a53272c91608e5dc2a0000419d</UniqueId>
+		</Properties>
+	</Item>
+	<SharedStrings>
+		<SharedString md5="yuZpQdnvvUBOTYh1jqZ2cA=="></SharedString>
+	</SharedStrings>
 </roblox>
