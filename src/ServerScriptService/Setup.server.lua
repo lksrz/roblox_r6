@@ -89,12 +89,29 @@ local function createBaseplate()
     bp.TopSurface = Enum.SurfaceType.Smooth
     bp.BottomSurface = Enum.SurfaceType.Smooth
     bp.Color = Color3.fromRGB(163, 162, 165)
+    -- Keep as an invisible logical reference for bounds/height; terrain will be the visible ground
+    bp.Transparency = 1
+    bp.CanCollide = false
     bp.Parent = Workspace
 
     return bp
 end
 
 local baseplate = createBaseplate()
+
+-- Create grass terrain covering the base area
+pcall(function()
+    local terrain = Workspace.Terrain
+    -- Clear existing terrain for a clean starting state
+    terrain:Clear()
+    local thickness = 8
+    local topY = baseplate.Position.Y + (BASEPLATE_SIZE.Y * 0.5)
+    local offsetDown = 2 -- push grass safely below spawns/baseplate
+    local cf = CFrame.new(0, (topY - offsetDown) - thickness * 0.5, 0)
+    local pad = 1.2 -- extend a bit beyond the baseplate borders
+    local fillSize = Vector3.new(BASEPLATE_SIZE.X * pad, thickness, BASEPLATE_SIZE.Z * pad)
+    terrain:FillBlock(cf, fillSize, Enum.Material.Grass)
+end)
 
 -- Simple spawn creation
 local function createSpawn(name, team, position)
@@ -130,6 +147,21 @@ local greenPos = Vector3.new(halfSize, spawnY, halfSize)   -- Right side
 
 local redSpawn = createSpawn("RedSpawn", redTeam, redPos)
 local greenSpawn = createSpawn("GreenSpawn", greenTeam, greenPos)
+
+-- Carve air above spawns to guarantee visibility (in case terrain overlaps)
+pcall(function()
+    local terrain = Workspace.Terrain
+    local function clearAround(part)
+        if not (part and part:IsA("BasePart")) then return end
+        local size = part.Size
+        local pad = 6
+        local height = 64
+        local cf = CFrame.new(part.Position.X, part.Position.Y + height * 0.5, part.Position.Z)
+        terrain:FillBlock(cf, Vector3.new(size.X + pad, height, size.Z + pad), Enum.Material.Air)
+    end
+    clearAround(redSpawn)
+    clearAround(greenSpawn)
+end)
 
 -- Disable any other spawn locations that might exist in the place/template
 for _, inst in ipairs(Workspace:GetDescendants()) do

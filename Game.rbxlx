@@ -5,34 +5,645 @@
     </Properties>
     <Item class="Folder" referent="1">
       <Properties>
-        <string name="Name">ClientScripts</string>
+        <string name="Name">Construction</string>
       </Properties>
+      <Item class="ModuleScript" referent="2">
+        <Properties>
+          <string name="Name">Generator</string>
+          <string name="Source"><![CDATA[-- Construction.Generator: Procedural building generator (rooms, corridors, walls, doors, windows)
+-- Single-responsibility: generate a building Model from config
+-- No network, no input; pure generation using axis-aligned rectangles and part emission
+
+local Workspace = game:GetService("Workspace")
+
+local Generator = {}
+
+export type Rect = { x0: number, z0: number, x1: number, z1: number }
+export type Edge = { axis: "x" | "z", pos: number, s: number, e: number }
+
+local function rectWidth(r: Rect) return math.abs(r.x1 - r.x0) end
+local function rectLength(r: Rect) return math.abs(r.z1 - r.z0) end
+local function rectCenter(r: Rect) return (r.x0 + r.x1) * 0.5, (r.z0 + r.z1) * 0.5 end
+local function rectClone(r: Rect): Rect return { x0 = r.x0, z0 = r.z0, x1 = r.x1, z1 = r.z1 } end
+local function makeRect(x0, z0, x1, z1): Rect return { x0 = x0, z0 = z0, x1 = x1, z1 = z1 } end
+
+local function clamp(v, a, b)
+    if v < a then return a end
+    if v > b then return b end
+    return v
+end
+
+-- Build BSP of footprint to rooms. Along splits we add corridor rects that connect children.
+local function bspPartition(rng: Random, rect: Rect, cfg)
+    local nodes = {}
+    local corridors: { Rect } = {}
+
+    local minW = cfg.Room.MinSize.Width
+    local minL = cfg.Room.MinSize.Length
+    local maxW = cfg.Room.MaxSize.Width
+    local maxL = cfg.Room.MaxSize.Length
+    local cw = cfg.CorridorWidth
+
+    local function splitRec(r: Rect, depth: number)
+        local w, l = rectWidth(r), rectLength(r)
+        local canSplitW = w > maxW
+        local canSplitL = l > maxL
+        if (not canSplitW and not canSplitL) or depth > 50 then
+            table.insert(nodes, r)
+            return
+        end
+
+        local splitAlongX
+        if canSplitW and canSplitL then
+            splitAlongX = (w > l) -- bias towards the longer axis
+        else
+            splitAlongX = canSplitW
+        end
+
+        if splitAlongX then
+            -- split along X: vertical cut parallel to Z, at x = k
+            local minK = r.x0 + minW
+            local maxK = r.x1 - minW
+            if maxK - minK < minW then
+                -- cannot split safely, accept as leaf
+                table.insert(nodes, r)
+                return
+            end
+            local k = rng:NextNumber(minK, maxK)
+            -- clamp to avoid super small rooms
+            k = clamp(k, r.x0 + minW, r.x1 - minW)
+            local left = makeRect(r.x0, r.z0, k, r.z1)
+            local right = makeRect(k, r.z0, r.x1, r.z1)
+
+            -- add two corridor bands hugging the split so both adjacent rooms share an edge at x=k
+            local leftBand = makeRect(k - cw * 0.5, r.z0, k, r.z1)
+            local rightBand = makeRect(k, r.z0, k + cw * 0.5, r.z1)
+            table.insert(corridors, leftBand)
+            table.insert(corridors, rightBand)
+
+            splitRec(left, depth + 1)
+            splitRec(right, depth + 1)
+        else
+            -- split along Z: horizontal cut parallel to X, at z = k
+            local minK = r.z0 + minL
+            local maxK = r.z1 - minL
+            if maxK - minK < minL then
+                table.insert(nodes, r)
+                return
+            end
+            local k = rng:NextNumber(minK, maxK)
+            k = clamp(k, r.z0 + minL, r.z1 - minL)
+            local bottom = makeRect(r.x0, r.z0, r.x1, k)
+            local top = makeRect(r.x0, k, r.x1, r.z1)
+
+            -- add two corridor bands hugging the split so both adjacent rooms share an edge at z=k
+            local lowerBand = makeRect(r.x0, k - cw * 0.5, r.x1, k)
+            local upperBand = makeRect(r.x0, k, r.x1, k + cw * 0.5)
+            table.insert(corridors, lowerBand)
+            table.insert(corridors, upperBand)
+
+            splitRec(bottom, depth + 1)
+            splitRec(top, depth + 1)
+        end
+    end
+
+    splitRec(rect, 0)
+    return nodes, corridors
+end
+
+-- Utilities to detect shared borders between a room and corridor to place doors
+local function overlap1D(a0, a1, b0, b1)
+    local s = math.max(a0, b0)
+    local e = math.min(a1, b1)
+    return s, e, (e > s)
+end
+
+local function sharedEdge(a: Rect, b: Rect): Edge?
+    -- Check if they touch along a full edge with positive overlap in the other axis
+    -- Left/right edges (x constant)
+    if math.abs(a.x1 - b.x0) < 1e-3 or math.abs(b.x1 - a.x0) < 1e-3 then
+        local x = math.abs(a.x1 - b.x0) < 1e-3 and a.x1 or b.x1
+        local s, e, ok = overlap1D(a.z0, a.z1, b.z0, b.z1)
+        if ok then return { axis = "z", pos = x, s = s, e = e } end
+    end
+    -- Top/bottom edges (z constant)
+    if math.abs(a.z1 - b.z0) < 1e-3 or math.abs(b.z1 - a.z0) < 1e-3 then
+        local z = math.abs(a.z1 - b.z0) < 1e-3 and a.z1 or b.z1
+        local s, e, ok = overlap1D(a.x0, a.x1, b.x0, b.x1)
+        if ok then return { axis = "x", pos = z, s = s, e = e } end
+    end
+    return nil
+end
+
+-- Lay out door openings on edges between rooms and corridors
+local function planDoors(rng: Random, rooms: {Rect}, corridors: {Rect}, cfg)
+    local doors = {} :: { [string]: { center: number, width: number } }
+    local width = math.max(cfg.Door.Width or 6, (cfg.Door.MinWidth or 0))
+    local maxPerRoom = 2
+    local function edgeKey(edge: Edge)
+        local function r(v) return string.format("%.2f", v) end
+        return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
+    end
+
+    for _, room in ipairs(rooms) do
+        local candidates = {}
+        for _, hall in ipairs(corridors) do
+            local edge = sharedEdge(room, hall)
+            if edge then table.insert(candidates, edge) end
+        end
+        -- Shuffle candidates
+        for i = #candidates, 2, -1 do
+            local j = rng:NextInteger(1, i)
+            candidates[i], candidates[j] = candidates[j], candidates[i]
+        end
+        local count = 0
+        for _, edge in ipairs(candidates) do
+            local margin = width * 0.5
+            local s = edge.s + margin
+            local e = edge.e - margin
+            if e > s then
+                local center = rng:NextNumber(s, e)
+                doors[edgeKey(edge)] = { center = center, width = width }
+                count = count + 1
+                if count >= maxPerRoom then break end
+            end
+        end
+    end
+    return doors
+end
+
+-- Select exterior doors on the outer footprint; also add short entrance corridors
+local function planExteriorDoorsAndEntrances(rng: Random, footprint: Rect, corridors: {Rect}, cfg)
+    local planned = {}
+    local cnt = math.max(0, cfg.ExteriorDoors or 0)
+    if cnt == 0 then return planned, corridors end
+
+    local margin = cfg.Window.InsetFromCorner or 4
+    local doorW = cfg.Door.Width
+    local cw = cfg.CorridorWidth
+
+    local choices = {
+        { axis = "x", pos = footprint.z0, s = footprint.x0 + margin, e = footprint.x1 - margin }, -- south edge
+        { axis = "x", pos = footprint.z1, s = footprint.x0 + margin, e = footprint.x1 - margin }, -- north edge
+        { axis = "z", pos = footprint.x0, s = footprint.z0 + margin, e = footprint.z1 - margin }, -- west edge
+        { axis = "z", pos = footprint.x1, s = footprint.z0 + margin, e = footprint.z1 - margin }, -- east edge
+    }
+
+    -- Pick edges and place doors
+    for i = 1, cnt do
+        local edge = choices[rng:NextInteger(1, #choices)]
+        local span = edge.e - edge.s
+        if span <= doorW * 1.5 then break end
+        local center = rng:NextNumber(edge.s + doorW, edge.e - doorW)
+        table.insert(planned, { axis = edge.axis, pos = edge.pos, center = center, width = doorW })
+
+        -- Add entrance corridor spanning across the building …
+        if edge.axis == "x" then
+            -- north/south wall: primary corridor goes along Z across the footprint
+            local x0 = center - cw * 0.5
+            local x1 = center + cw * 0.5
+            table.insert(corridors, makeRect(x0, footprint.z0, x1, footprint.z1))
+            -- plus a perpendicular cross corridor across X at mid Z to guarantee intersections
+            local zMid = (footprint.z0 + footprint.z1) * 0.5
+            local z0 = zMid - cw * 0.5
+            local z1 = zMid + cw * 0.5
+            table.insert(corridors, makeRect(footprint.x0, z0, footprint.x1, z1))
+        else
+            -- east/west wall: primary corridor goes along X across the footprint
+            local z0 = center - cw * 0.5
+            local z1 = center + cw * 0.5
+            table.insert(corridors, makeRect(footprint.x0, z0, footprint.x1, z1))
+            -- plus a perpendicular cross corridor across Z at mid X to guarantee intersections
+            local xMid = (footprint.x0 + footprint.x1) * 0.5
+            local x0 = xMid - cw * 0.5
+            local x1 = xMid + cw * 0.5
+            table.insert(corridors, makeRect(x0, footprint.z0, x1, footprint.z1))
+        end
+    end
+
+    return planned, corridors
+end
+
+-- Segment math: subtract intervals from [s,e] and return kept segments
+local function subtractIntervals(s: number, e: number, openings: { {s: number, e: number} })
+    table.sort(openings, function(a, b) return a.s < b.s end)
+    local cursor = s
+    local kept = {}
+    for _, o in ipairs(openings) do
+        local os = clamp(o.s, s, e)
+        local oe = clamp(o.e, s, e)
+        if oe > os and os > cursor then
+            table.insert(kept, { s = cursor, e = os })
+        end
+        cursor = math.max(cursor, oe)
+    end
+    if cursor < e then
+        table.insert(kept, { s = cursor, e = e })
+    end
+    return kept
+end
+
+-- Emit a set of wall parts along a straight edge with vertical bands to produce holes for doors/windows
+local function emitWallBandParts(container: Instance, color: Color3, edge: Edge, bandY0: number, bandY1: number, openings, thickness: number, material: Enum.Material?)
+    if bandY1 <= bandY0 then return end
+    local segs = (#openings > 0) and subtractIntervals(edge.s, edge.e, openings) or { { s = edge.s, e = edge.e } }
+    for _, seg in ipairs(segs) do
+        local mid = (seg.s + seg.e) * 0.5
+        local len = seg.e - seg.s
+        if len > 0.05 then
+            local part = Instance.new("Part")
+            part.Anchored = true
+            part.CanCollide = true
+            part.TopSurface = Enum.SurfaceType.Smooth
+            part.BottomSurface = Enum.SurfaceType.Smooth
+            part.Color = color
+            if material then part.Material = material end
+            local height = bandY1 - bandY0
+            if edge.axis == "x" then
+                part.Size = Vector3.new(len, height, thickness)
+                part.CFrame = CFrame.new(mid, bandY0 + height * 0.5, edge.pos)
+            else
+                part.Size = Vector3.new(thickness, height, len)
+                part.CFrame = CFrame.new(edge.pos, bandY0 + height * 0.5, mid)
+            end
+            part.Parent = container
+        end
+    end
+end
+
+local function computeExteriorWindows(edge: Edge, cfg)
+    local arr = {}
+    local spacing = cfg.Window.Spacing
+    local inset = cfg.Window.InsetFromCorner
+    local half = cfg.Window.Width * 0.5
+    local s = edge.s + inset
+    local e = edge.e - inset
+    local at = s
+    while at + half <= e - half do
+        table.insert(arr, { s = at - half, e = at + half })
+        at = at + spacing
+    end
+    return arr
+end
+
+local function gatherExteriorEdges(footprint: Rect)
+    return {
+        { axis = "x", pos = footprint.z0, s = footprint.x0, e = footprint.x1 }, -- south
+        { axis = "x", pos = footprint.z1, s = footprint.x0, e = footprint.x1 }, -- north
+        { axis = "z", pos = footprint.x0, s = footprint.z0, e = footprint.z1 }, -- west
+        { axis = "z", pos = footprint.x1, s = footprint.z0, e = footprint.z1 }, -- east
+    }
+end
+
+-- Gather all room<->corridor shared edges (interior walls) for junction analysis
+local function gatherInteriorEdges(rooms: {Rect}, halls: {Rect})
+    local edges: { Edge } = {}
+    for _, room in ipairs(rooms) do
+        for _, hall in ipairs(halls) do
+            local edge = sharedEdge(room, hall)
+            if edge then table.insert(edges, edge) end
+        end
+    end
+    return edges
+end
+
+local function computeJunctionExclusionsForEdge(exteriorEdge: Edge, interiorEdges: {Edge}, footprint: Rect, clearance: number)
+    local exclusions = {}
+    if exteriorEdge.axis == "x" then
+        -- exterior edge runs along X at z = pos; perpendicular interior edges are axis 'z'
+        for _, e in ipairs(interiorEdges) do
+            if e.axis == "z" then
+                -- e runs from z in [s,e] at x = e.pos; check if it meets this boundary
+                if (exteriorEdge.pos >= math.min(e.s, e.e) - 1e-3) and (exteriorEdge.pos <= math.max(e.s, e.e) + 1e-3) then
+                    local x = e.pos
+                    table.insert(exclusions, { s = x - clearance, e = x + clearance })
+                end
+            end
+        end
+    else
+        -- exterior edge runs along Z at x = pos; perpendicular interior edges are axis 'x'
+        for _, e in ipairs(interiorEdges) do
+            if e.axis == "x" then
+                if (exteriorEdge.pos >= math.min(e.s, e.e) - 1e-3) and (exteriorEdge.pos <= math.max(e.s, e.e) + 1e-3) then
+                    local z = e.pos
+                    table.insert(exclusions, { s = z - clearance, e = z + clearance })
+                end
+            end
+        end
+    end
+    return exclusions
+end
+
+-- Emit interior walls for room<->corridor borders with door holes
+local function emitInteriorWalls(container: Instance, rooms: {Rect}, halls: {Rect}, doors, cfg)
+    local color = cfg.Colors.InteriorWalls or cfg.Colors.Walls
+    local mats = cfg.Materials or {}
+    local mat = mats.InteriorWalls or mats.Walls or Enum.Material.Concrete
+    local doorH = cfg.Door.Height
+    local thick = cfg.WallThickness
+    local edgeClear = math.max(0.25, (cfg.WallThickness or 1) * 0.25) -- side clearance (across corridor)
+    local runPad = math.max(0, (cfg.Door and cfg.Door.Clearance) or 0) -- extra along-wall clearance
+    for _, room in ipairs(rooms) do
+        for _, hall in ipairs(halls) do
+            local edge = sharedEdge(room, hall)
+            if edge then
+                local function edgeKey(edge: Edge)
+                    local function r(v) return string.format("%.2f", v) end
+                    return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
+                end
+                local doorIntervals = {}
+                local d = doors[edgeKey(edge)]
+                if d then
+                    local s = d.center - d.width * 0.5 - runPad
+                    local e = d.center + d.width * 0.5 + runPad
+                    table.insert(doorIntervals, { s = s, e = e })
+                end
+                -- Remove interior wall wherever the door interval is, across full height
+                emitWallBandParts(container, color, edge, 0, cfg.WallHeight, doorIntervals, thick, mat)
+            end
+        end
+    end
+end
+
+-- Emit exterior walls with doors and window openings
+local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorDoors, cfg, interiorEdges)
+    local color = cfg.Colors.Walls
+    local mats = cfg.Materials or {}
+    local mat = mats.Walls or Enum.Material.Concrete
+    local doorH = cfg.Door.Height
+    local sill = cfg.Window.SillHeight
+    local wTop = sill + cfg.Window.Height
+    local thick = cfg.WallThickness
+    local edges = gatherExteriorEdges(footprint)
+
+    local function unionIntervals(a, b)
+        if #a == 0 then return b end
+        if #b == 0 then return a end
+        local out = {}
+        for i = 1, #a do out[#out + 1] = a[i] end
+        for i = 1, #b do out[#out + 1] = b[i] end
+        return out
+    end
+
+    local clearance = (cfg.Window and (cfg.Window.JunctionClearance or 0)) or 0
+    if clearance <= 0 then clearance = math.max(cfg.WallThickness, 2) end
+
+    for _, edge in ipairs(edges) do
+        local doorIntervals = {}
+        for _, d in ipairs(exteriorDoors) do
+            if (d.axis == "x" and edge.axis == "x" and math.abs(d.pos - edge.pos) < 1e-3)
+                or (d.axis == "z" and edge.axis == "z" and math.abs(d.pos - edge.pos) < 1e-3) then
+                table.insert(doorIntervals, { s = d.center - d.width * 0.5, e = d.center + d.width * 0.5 })
+            end
+        end
+
+        local windowIntervals = computeExteriorWindows(edge, cfg)
+        -- Drop any windows too close to interior wall junctions
+        local exclusions = computeJunctionExclusionsForEdge(edge, interiorEdges or {}, footprint, clearance)
+        if #exclusions > 0 then
+            local filtered = {}
+            for _, w in ipairs(windowIntervals) do
+                local keep = true
+                for _, ex in ipairs(exclusions) do
+                    local s = math.max(w.s, ex.s)
+                    local e = math.min(w.e, ex.e)
+                    if e > s then keep = false; break end
+                end
+                if keep then table.insert(filtered, w) end
+            end
+            windowIntervals = filtered
+        end
+
+        -- Non-overlapping vertical bands to avoid blocking doors with window bands
+        local y0 = 0
+        local yA1 = math.min(doorH, sill)
+        local yB0 = yA1
+        local yB1 = math.max(doorH, sill)
+        local yC0 = yB1
+        local yC1 = wTop
+        local yD0 = math.max(doorH, wTop)
+        local yTop = cfg.WallHeight
+
+        if yA1 > y0 then
+            emitWallBandParts(container, color, edge, y0, yA1, doorIntervals, thick, mat)
+        end
+        if yB1 > yB0 then
+            emitWallBandParts(container, color, edge, yB0, yB1, unionIntervals(doorIntervals, windowIntervals), thick, mat)
+        end
+        if yC1 > yC0 then
+            emitWallBandParts(container, color, edge, yC0, yC1, windowIntervals, thick, mat)
+        end
+        if yTop > yD0 then
+            emitWallBandParts(container, color, edge, yD0, yTop, {}, thick, mat)
+        end
+    end
+end
+
+-- Emit solid walls between room-room shared borders (no door openings)
+local function emitRoomToRoomWalls(container: Instance, rooms: {Rect}, cfg)
+    local color = cfg.Colors.InteriorWalls or cfg.Colors.Walls
+    local thick = cfg.WallThickness
+    local h = cfg.WallHeight
+    for i = 1, #rooms do
+        for j = i + 1, #rooms do
+            local a = rooms[i]
+            local b = rooms[j]
+            local edge = sharedEdge(a, b)
+            if edge then
+                emitWallBandParts(container, color, edge, 0, h, {}, thick)
+            end
+        end
+    end
+end
+
+-- Optional debug: visualize rectangles as thin parts
+local function visualizeRects(container: Instance, rooms: {Rect}, halls: {Rect}, cfg)
+    if not (cfg.Debug and cfg.Debug.VisualizeRects) then return end
+    local function addRect(r: Rect, color: Color3, y: number)
+        local p = Instance.new("Part")
+        p.Anchored = true
+        p.CanCollide = false
+        p.Transparency = 0.6
+        p.Color = color
+        local cx, cz = rectCenter(r)
+        p.Size = Vector3.new(math.max(0.2, rectWidth(r) - 0.4), 0.2, math.max(0.2, rectLength(r) - 0.4))
+        p.CFrame = CFrame.new(cx, y, cz)
+        p.Parent = container
+    end
+    for _, r in ipairs(rooms) do addRect(r, Color3.fromRGB(100, 200, 100), 0.2) end
+    for _, h in ipairs(halls) do addRect(h, Color3.fromRGB(200, 100, 100), 0.4) end
+end
+
+-- Emit flat floor parts for corridors/rooms (optional)
+local function emitFloors(container: Instance, rects: {Rect}, color: Color3, material: Enum.Material?)
+    for _, r in ipairs(rects) do
+        local p = Instance.new("Part")
+        p.Anchored = true
+        p.CanCollide = true
+        p.TopSurface = Enum.SurfaceType.Smooth
+        p.BottomSurface = Enum.SurfaceType.Smooth
+        p.Color = color
+        if material then p.Material = material end
+        local cx, cz = rectCenter(r)
+        p.Size = Vector3.new(rectWidth(r), 0.2, rectLength(r))
+        p.CFrame = CFrame.new(cx, 0.1, cz)
+        p.Parent = container
+    end
+end
+
+local function emitSlab(container: Instance, name: string, rect: Rect, wallThick: number, extend: number, y: number, thickness: number, color: Color3, material: Enum.Material?)
+    local x0 = rect.x0 - wallThick * 0.5 - (extend or 0)
+    local x1 = rect.x1 + wallThick * 0.5 + (extend or 0)
+    local z0 = rect.z0 - wallThick * 0.5 - (extend or 0)
+    local z1 = rect.z1 + wallThick * 0.5 + (extend or 0)
+    local cx = (x0 + x1) * 0.5
+    local cz = (z0 + z1) * 0.5
+    local p = Instance.new("Part")
+    p.Name = name
+    p.Anchored = true
+    p.CanCollide = true
+    p.TopSurface = Enum.SurfaceType.Smooth
+    p.BottomSurface = Enum.SurfaceType.Smooth
+    p.Color = color
+    if material then p.Material = material end
+    p.Size = Vector3.new(math.max(0.2, x1 - x0), thickness, math.max(0.2, z1 - z0))
+    p.CFrame = CFrame.new(cx, y + thickness * 0.5, cz)
+    p.Parent = container
+end
+
+-- Public API: Generate a building Model at originCFrame (floor aligned), returns the created Model
+function Generator.Generate(originCFrame: CFrame, cfg)
+    assert(originCFrame ~= nil, "originCFrame required")
+    assert(cfg ~= nil, "cfg required")
+
+    local rng = Random.new(cfg.Seed or os.clock())
+    local fpW = cfg.Footprint.Width
+    local fpL = cfg.Footprint.Length
+    local halfW = fpW * 0.5
+    local halfL = fpL * 0.5
+
+    -- Build in local space centered at (0,0); we will transform to origin at the end
+    local footprint = makeRect(-halfW, -halfL, halfW, halfL)
+
+    local rooms, corridors = bspPartition(rng, footprint, cfg)
+    local extDoors
+    extDoors, corridors = planExteriorDoorsAndEntrances(rng, footprint, corridors, cfg)
+    local doors = planDoors(rng, rooms, corridors, cfg)
+
+    local model = Instance.new("Model")
+    model.Name = "GeneratedBuilding"
+
+    local wallsFolder = Instance.new("Folder"); wallsFolder.Name = "Walls"; wallsFolder.Parent = model
+    local floorsFolder = Instance.new("Folder"); floorsFolder.Name = "Floors"; floorsFolder.Parent = model
+    local roofFolder = Instance.new("Folder"); roofFolder.Name = "Roof"; roofFolder.Parent = model
+
+    visualizeRects(model, rooms, corridors, cfg)
+
+    if cfg.GenerateFloors then
+        local mats = cfg.Materials or {}
+        emitFloors(floorsFolder, rooms, cfg.Colors.Rooms, mats.Floor or Enum.Material.Wood)
+        emitFloors(floorsFolder, corridors, cfg.Colors.Corridors, mats.Floor or Enum.Material.Wood)
+    end
+
+    -- Single floor slab under everything
+    if cfg.GenerateFloorSlab ~= false then
+        local slabCfg = cfg.Slab or { FloorThickness = 1, Extend = 0 }
+        local mats = cfg.Materials or {}
+        emitSlab(floorsFolder, "FloorSlab", footprint, cfg.WallThickness, slabCfg.Extend or 0, 0, slabCfg.FloorThickness or 1, cfg.Colors.Floor or cfg.Colors.Rooms, mats.Floor or Enum.Material.Wood)
+    end
+
+    -- Single roof slab above everything
+    if cfg.GenerateRoof ~= false then
+        local slabCfg = cfg.Slab or { RoofThickness = 1, Extend = 0 }
+        local mats = cfg.Materials or {}
+        local yTop = cfg.WallHeight
+        emitSlab(roofFolder, "RoofSlab", footprint, cfg.WallThickness, slabCfg.Extend or 0, yTop, slabCfg.RoofThickness or 1, cfg.Colors.Roof or cfg.Colors.Walls, mats.Roof or Enum.Material.SmoothPlastic)
+    end
+
+    -- Interior walls between rooms and corridors
+    emitInteriorWalls(wallsFolder, rooms, corridors, doors, cfg)
+    -- Exterior walls with windows and exterior doors
+    local interiorEdges = gatherInteriorEdges(rooms, corridors)
+    emitExteriorWalls(wallsFolder, footprint, extDoors, cfg, interiorEdges)
+
+    -- Compute largest room center (in local space), then transform to world space
+    local largestArea = -1
+    local largestCenterLocal: Vector3? = nil
+    for _, r in ipairs(rooms) do
+        local area = rectWidth(r) * rectLength(r)
+        if area > largestArea then
+            largestArea = area
+            local cx, cz = rectCenter(r)
+            largestCenterLocal = Vector3.new(cx, 0, cz)
+        end
+    end
+
+    local largestCenterWorld: Vector3? = nil
+    if largestCenterLocal then
+        largestCenterWorld = originCFrame:ToWorldSpace(CFrame.new(largestCenterLocal)).Position
+    end
+
+    -- Determine floor top in local space (slab vs patches)
+    local slabTop = 0
+    if cfg.GenerateFloorSlab ~= false then
+        local slabCfg = cfg.Slab or {}
+        slabTop = slabCfg.FloorThickness or 1
+    end
+    local patchTop = (cfg.GenerateFloors and 0.2) or 0
+    local floorTopLocal = math.max(slabTop, patchTop)
+    local floorTopWorld = originCFrame.Position.Y + floorTopLocal
+
+    -- Transform to originCFrame (rotation+translation); since we only used identity rotation, apply the full CFrame to children
+    for _, inst in ipairs(model:GetDescendants()) do
+        if inst:IsA("BasePart") then
+            inst.CFrame = originCFrame:ToWorldSpace(inst.CFrame)
+        end
+    end
+
+    model.Parent = Workspace
+    return model, { largestRoomCenter = largestCenterWorld, floorTopY = floorTopWorld }
+end
+
+return Generator
+]]></string>
+        </Properties>
+      </Item>
     </Item>
-    <Item class="Folder" referent="2">
+    <Item class="Folder" referent="3">
       <Properties>
         <string name="Name">Net</string>
       </Properties>
-      <Item class="ModuleScript" referent="3">
+      <Item class="ModuleScript" referent="4">
         <Properties>
           <string name="Name">Events</string>
           <string name="Source"><![CDATA[-- Centralized RemoteEvent/RemoteFunction registry
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Events = {}
 
 local function ensure(name, className)
     local folder = ReplicatedStorage:FindFirstChild("Remotes")
     if not folder then
-        folder = Instance.new("Folder")
-        folder.Name = "Remotes"
-        folder.Parent = ReplicatedStorage
+        if RunService:IsServer() then
+            folder = Instance.new("Folder")
+            folder.Name = "Remotes"
+            folder.Parent = ReplicatedStorage
+        else
+            folder = ReplicatedStorage:WaitForChild("Remotes", 10)
+        end
     end
-    local obj = folder:FindFirstChild(name)
+
+    local obj = folder and folder:FindFirstChild(name) or nil
     if not obj then
-        obj = Instance.new(className)
-        obj.Name = name
-        obj.Parent = folder
+        if RunService:IsServer() then
+            obj = Instance.new(className)
+            obj.Name = name
+            obj.Parent = folder
+        else
+            obj = folder and folder:WaitForChild(name, 10) or nil
+        end
     end
     return obj
 end
@@ -43,18 +654,19 @@ Events.UseGadget = ensure("UseGadget", "RemoteEvent")
 Events.FireWeapon = ensure("FireWeapon", "RemoteEvent")
 Events.HitConfirm = ensure("HitConfirm", "RemoteEvent")
 Events.Objective = ensure("ObjectiveEvent", "RemoteEvent")
+-- Construction/building requests
+Events.Construction = ensure("ConstructionRequest", "RemoteEvent")
 
 return Events
-
 ]]></string>
         </Properties>
       </Item>
     </Item>
-    <Item class="Folder" referent="4">
+    <Item class="Folder" referent="5">
       <Properties>
         <string name="Name">Shared</string>
       </Properties>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="6">
         <Properties>
           <string name="Name">Config</string>
           <string name="Source"><![CDATA[-- Central game configuration (shared)
@@ -101,14 +713,69 @@ local Config = {
         Position = Vector3.new(0, 0.5, 80),
         Color = Color3.fromRGB(120, 200, 255),
     },
+
+    -- Procedural Construction / Building Generation
+    CONSTRUCTION = {
+        Seed = 1337,
+        Footprint = { Width = 100, Length = 80 },
+        Floors = 1,
+
+        -- Structure
+        WallHeight = 16.8, -- +20% from 14
+        WallThickness = 2,
+        CorridorWidth = 10,
+
+        -- Rooms (BSP partition constraints)
+        Room = {
+            MinSize = { Width = 16, Length = 14 },
+            MaxSize = { Width = 34, Length = 28 },
+        },
+
+        -- Openings
+        Door = { Width = 8, MinWidth = 8, Height = 9, Clearance = 3 },
+        ExteriorDoors = 2,
+        Window = {
+            Width = 6,
+            Height = 5,
+            SillHeight = 4,
+            Spacing = 8, -- center-to-center along exterior walls
+            InsetFromCorner = 4, -- keep windows away from corners
+        },
+
+        -- Colors/Style
+        Colors = {
+            Walls = Color3.fromRGB(150, 150, 150),      -- grey walls
+            InteriorWalls = Color3.fromRGB(150, 150, 150),
+            Corridors = Color3.fromRGB(170, 170, 170),
+            Rooms = Color3.fromRGB(210, 210, 210),
+            Floor = Color3.fromRGB(140, 110, 80),       -- wood tone
+            Roof = Color3.fromRGB(255, 255, 255),       -- white ceiling
+        },
+        Materials = {
+            Walls = Enum.Material.Concrete,
+            InteriorWalls = Enum.Material.Concrete,
+            Floor = Enum.Material.Wood,
+            Roof = Enum.Material.SmoothPlastic,
+        },
+
+        -- Generation toggles
+        GenerateFloors = false, -- per-room/corridor thin floor patches
+        GenerateFloorSlab = true, -- one big floor under whole building
+        GenerateRoof = true,      -- one big roof above walls
+        Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0 },
+        Debug = {
+            Print = true,
+            VisualizeRects = false,
+            Randomize = true,
+        },
+    },
 }
 
 return Config
-
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">ConfigLoader</string>
           <string name="Source"><![CDATA[-- Centralized configuration loading utility
@@ -176,15 +843,15 @@ return ConfigLoader
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="7">
+  <Item class="ServerScriptService" referent="8">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="8">
+    <Item class="Folder" referent="9">
       <Properties>
         <string name="Name">AntiCheat</string>
       </Properties>
-      <Item class="ModuleScript" referent="9">
+      <Item class="ModuleScript" referent="10">
         <Properties>
           <string name="Name">RateLimiter</string>
           <string name="Source"><![CDATA[local RateLimiter = {}
@@ -207,16 +874,249 @@ return RateLimiter
         </Properties>
       </Item>
     </Item>
-    <Item class="Folder" referent="10">
+    <Item class="Script" referent="11">
       <Properties>
-        <string name="Name">Debug</string>
+        <string name="Name">Construction</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[-- Bootstrap for ConstructionService to keep concerns separated
+local ConstructionService = require(script.Parent.ConstructionService)
+-- Nothing else needed; module self-initializes
+
+]]></string>
       </Properties>
+      <Item class="ModuleScript" referent="12">
+        <Properties>
+          <string name="Name">ConstructionService</string>
+          <string name="Source"><![CDATA[-- ConstructionService: handles server-side construction generation
+-- Responsibility: listen for build requests and spawn a simple defensive box
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local Events
+do
+    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
+    if ok and mod then Events = mod else
+        -- Fallback to Remotes folder if Net.Events is unavailable
+        local folder = ReplicatedStorage:FindFirstChild("Remotes") or Instance.new("Folder")
+        folder.Name = "Remotes"
+        folder.Parent = ReplicatedStorage
+        local function ensure(name, className)
+            local obj = folder:FindFirstChild(name)
+            if not obj then obj = Instance.new(className) obj.Name = name obj.Parent = folder end
+            return obj
+        end
+        Events = { Construction = ensure("ConstructionRequest", "RemoteEvent") }
+    end
+end
+
+local ConstructionService = {}
+
+-- Simple, configurable defaults (kept local to avoid broad config edits)
+local DEFAULTS = {
+    wallHeight = 12,
+    wallThickness = 2,
+    boxInnerSize = 24, -- inner square size between opposite walls
+    color = Color3.fromRGB(120, 170, 120),
+    cooldownSec = 3,
+}
+
+-- Basic per-player cooldown
+local lastRequestAt: { [number]: number } = {}
+
+local function withinCooldown(player: Player)
+    local now = os.clock()
+    local last = lastRequestAt[player.UserId] or 0
+    if now - last < DEFAULTS.cooldownSec then return true end
+    lastRequestAt[player.UserId] = now
+    return false
+end
+
+local function getGreenSpawn()
+    local spawn = Workspace:FindFirstChild("GreenSpawn")
+    if spawn and spawn:IsA("BasePart") then return spawn end
+    -- Accept SpawnLocation too
+    if spawn and spawn:IsA("SpawnLocation") then return spawn end
+    return nil
+end
+
+local function clearOld()
+    for _, name in ipairs({"DefenseWalls", "GeneratedBuilding"}) do
+        local container = Workspace:FindFirstChild(name)
+        if container then container:Destroy() end
+    end
+end
+
+local function makeWall(name: string, size: Vector3, cframe: CFrame, color: Color3)
+    local p = Instance.new("Part")
+    p.Name = name
+    p.Anchored = true
+    p.CanCollide = true
+    p.TopSurface = Enum.SurfaceType.Smooth
+    p.BottomSurface = Enum.SurfaceType.Smooth
+    p.Size = size
+    p.CFrame = cframe
+    p.Color = color
+    return p
+end
+
+local function buildProceduralAt(origin: CFrame)
+    clearOld()
+
+    -- Determine floor Y offset
+    local baseplate = Workspace:FindFirstChild("Baseplate")
+    local groundY = baseplate and baseplate.Position.Y + (baseplate.Size.Y * 0.5) or 0
+
+    local originOnGround = CFrame.new(origin.Position.X, groundY, origin.Position.Z)
+
+    -- Load config
+    local cfgLoaderOk, Loader = pcall(function()
+        return require(ReplicatedStorage.Shared.ConfigLoader)
+    end)
+    local sharedCfg = (cfgLoaderOk and Loader and Loader.Load("ConstructionService")) or nil
+    local buildCfg = sharedCfg and sharedCfg.CONSTRUCTION or nil
+    if not buildCfg then
+        warn("[ConstructionService] CONSTRUCTION config missing; using ad-hoc defaults")
+        buildCfg = {
+            Seed = 1337,
+            Footprint = { Width = 96, Length = 72 },
+            Floors = 1,
+            WallHeight = 16.8,
+            WallThickness = 2,
+            CorridorWidth = 10,
+            Room = { MinSize = { Width = 16, Length = 14 }, MaxSize = { Width = 34, Length = 28 } },
+            Door = { Width = 8, MinWidth = 8, Height = 9, Clearance = 3 },
+            ExteriorDoors = 2,
+            Window = { Width = 6, Height = 5, SillHeight = 4, Spacing = 8, InsetFromCorner = 4 },
+            Colors = { Walls = Color3.fromRGB(150,150,150), InteriorWalls = Color3.fromRGB(150,150,150), Corridors = Color3.fromRGB(170,170,170), Rooms = Color3.fromRGB(210,210,210), Floor = Color3.fromRGB(140,110,80), Roof = Color3.fromRGB(255,255,255) },
+            Materials = { Walls = Enum.Material.Concrete, InteriorWalls = Enum.Material.Concrete, Floor = Enum.Material.Wood, Roof = Enum.Material.SmoothPlastic },
+            GenerateFloors = false,
+            GenerateFloorSlab = true,
+            GenerateRoof = true,
+            Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0 },
+            Debug = { Print = true, VisualizeRects = false, Randomize = true },
+        }
+    end
+
+    -- Call generator
+    local ok, gen = pcall(function()
+        return require(ReplicatedStorage:WaitForChild("Construction"):WaitForChild("Generator"))
+    end)
+    if not ok or not gen then
+        warn("[ConstructionService] Generator module not found")
+        return
+    end
+    -- Shallow clone config so we can override Seed per build without mutating shared config
+    local runCfg = table.clone(buildCfg)
+    -- Randomize per build (unless Debug.Randomize == false)
+    local salt = math.floor((os.clock() * 1000) % 1e9)
+    local shouldRandomize = true
+    if buildCfg.Debug and buildCfg.Debug.Randomize == false then
+        shouldRandomize = false
+    end
+    runCfg.Seed = (buildCfg.Seed or 0) + (shouldRandomize and salt or 0)
+
+    local model, meta = gen.Generate(originOnGround, runCfg)
+    if model then
+        print("[ConstructionService] Generated procedural building")
+    end
+
+    -- Move Green spawn to the largest room center (on floor)
+    if meta and meta.largestRoomCenter and meta.floorTopY then
+        local spawn = getGreenSpawn()
+        if spawn and spawn:IsA("BasePart") then
+            local pos = meta.largestRoomCenter
+            local y = meta.floorTopY + (spawn.Size.Y * 0.5)
+            spawn.CFrame = CFrame.new(Vector3.new(pos.X, y, pos.Z))
+        end
+    end
+
+    -- Lower grass terrain just under the building floor level within the building bounds
+    pcall(function()
+        if not (model and meta and meta.floorTopY) then return end
+        local terrain = Workspace.Terrain
+        local bboxCF, bboxSize = model:GetBoundingBox()
+        local pad = 6
+        local extentX = bboxSize.X + pad
+        local extentZ = bboxSize.Z + pad
+        -- Set grass top slightly below the floor bottom to avoid overlap with spawns and floor
+        local targetTop = meta.floorTopY - 0.5
+
+        -- Carve out existing terrain above targetTop within bounds
+        local airHeight = 64
+        local airCF = CFrame.new(bboxCF.Position.X, targetTop + airHeight * 0.5, bboxCF.Position.Z)
+        terrain:FillBlock(airCF, Vector3.new(extentX, airHeight, extentZ), Enum.Material.Air)
+
+        -- Refill with grass up to targetTop
+        local grassThick = 8
+        local grassCF = CFrame.new(bboxCF.Position.X, targetTop - grassThick * 0.5, bboxCF.Position.Z)
+        terrain:FillBlock(grassCF, Vector3.new(extentX, grassThick, extentZ), Enum.Material.Grass)
+    end)
+end
+
+local function handleConstructionRequest(player: Player)
+    -- Validate player exists and is in game
+    if not player or not player.Parent then return end
+    if withinCooldown(player) then
+        warn(string.format("[ConstructionService] Rate limited: %s", player.Name))
+        return
+    end
+
+    local greenSpawn = getGreenSpawn()
+    if not greenSpawn then
+        warn("[ConstructionService] GreenSpawn not found; cannot build")
+        return
+    end
+
+    -- Build procedural structure near the green team spawn
+    buildProceduralAt(greenSpawn.CFrame)
+    print(string.format("[ConstructionService] Built procedural building near Green spawn (by %s)", player.Name))
+end
+
+function ConstructionService.Init()
+    -- Resolve remote robustly
+    local remote = Events and Events.Construction or nil
+    if not remote then
+        local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:WaitForChild("Remotes", 10)
+        if remotesFolder then
+            remote = remotesFolder:FindFirstChild("ConstructionRequest") or remotesFolder:WaitForChild("ConstructionRequest", 10)
+        end
+    end
+
+    if not remote then
+        warn("[ConstructionService] ConstructionRequest remote not found; cannot initialize")
+        return
+    end
+
+    -- Connect remote
+    remote.OnServerEvent:Connect(function(player)
+        print(string.format("[ConstructionService] Request received from %s", player and player.Name or "?"))
+        -- No payload needed yet
+        handleConstructionRequest(player)
+    end)
+
+    -- Cleanup cooldown table when players leave
+    Players.PlayerRemoving:Connect(function(plr)
+        lastRequestAt[plr.UserId] = nil
+    end)
+
+    print("[ConstructionService] Initialized and listening for ConstructionRequest")
+end
+
+-- Auto-init if required directly
+ConstructionService.Init()
+
+return ConstructionService
+]]></string>
+        </Properties>
+      </Item>
     </Item>
-    <Item class="Folder" referent="11">
+    <Item class="Folder" referent="13">
       <Properties>
         <string name="Name">Gameplay</string>
       </Properties>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">HitRegService</string>
           <string name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -355,7 +1255,7 @@ game:BindToClose(cleanupConnections)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">ObjectiveService</string>
           <string name="Source"><![CDATA[-- Objective: spawn, pickup, steal, carry-follow, deliver at Green spawn
@@ -822,7 +1722,7 @@ return ObjectiveService
         </Properties>
       </Item>
     </Item>
-    <Item class="ModuleScript" referent="14">
+    <Item class="ModuleScript" referent="16">
       <Properties>
         <string name="Name">LobbyManager</string>
         <string name="Source">-- Manages lobby countdown when 2+ players are present
@@ -984,7 +1884,7 @@ end)
 return LobbyManager</string>
       </Properties>
     </Item>
-    <Item class="Script" referent="15">
+    <Item class="Script" referent="17">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -993,6 +1893,13 @@ return LobbyManager</string>
 local Players = game:GetService("Players")
 
 local LobbyManager = require(script.Parent.LobbyManager)
+-- Ensure ConstructionService is initialized early (bootstrap)
+pcall(function()
+    local folder = script.Parent:FindFirstChild("Construction") or script.Parent:WaitForChild("Construction", 5)
+    if folder then
+        require(folder:WaitForChild("ConstructionService"))
+    end
+end)
 
 -- Initialize lobby manager on server start
 task.wait(1) -- Let services initialize
@@ -1000,11 +1907,11 @@ LobbyManager.CheckAndStart()
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="16">
+    <Item class="Folder" referent="18">
       <Properties>
         <string name="Name">Round</string>
       </Properties>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">RoundService</string>
           <string name="Source"><![CDATA[local Players = game:GetService("Players")
@@ -1189,7 +2096,7 @@ return RoundService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">RoundState</string>
           <string name="Source"><![CDATA[-- Round state enum
@@ -1201,7 +2108,7 @@ return State
         </Properties>
       </Item>
     </Item>
-    <Item class="Script" referent="19">
+    <Item class="Script" referent="21">
       <Properties>
         <string name="Name">Setup</string>
         <token name="RunContext">0</token>
@@ -1252,6 +2159,19 @@ if Config.forceR6 then
     end)
 end
 
+-- Disable chat at the server level to prevent client-side ChatScript errors
+pcall(function()
+    local StarterGui = game:GetService("StarterGui")
+    -- Set server-wide chat settings
+    StarterGui.ShowDevelopmentGui = false
+
+    -- Try to disable chat service if available
+    local TextChatService = game:GetService("TextChatService")
+    if TextChatService then
+        TextChatService.ChatVersion = Enum.ChatVersion.LegacyChatService
+    end
+end)
+
 -- Simple team creation
 local function createTeam(name, brickColor)
     local team = Instance.new("Team")
@@ -1283,12 +2203,29 @@ local function createBaseplate()
     bp.TopSurface = Enum.SurfaceType.Smooth
     bp.BottomSurface = Enum.SurfaceType.Smooth
     bp.Color = Color3.fromRGB(163, 162, 165)
+    -- Keep as an invisible logical reference for bounds/height; terrain will be the visible ground
+    bp.Transparency = 1
+    bp.CanCollide = false
     bp.Parent = Workspace
 
     return bp
 end
 
 local baseplate = createBaseplate()
+
+-- Create grass terrain covering the base area
+pcall(function()
+    local terrain = Workspace.Terrain
+    -- Clear existing terrain for a clean starting state
+    terrain:Clear()
+    local thickness = 8
+    local topY = baseplate.Position.Y + (BASEPLATE_SIZE.Y * 0.5)
+    local offsetDown = 0.5 -- keep grass safely below spawns/baseplate
+    local cf = CFrame.new(0, (topY - offsetDown) - thickness * 0.5, 0)
+    local pad = 1.2 -- extend a bit beyond the baseplate borders
+    local fillSize = Vector3.new(BASEPLATE_SIZE.X * pad, thickness, BASEPLATE_SIZE.Z * pad)
+    terrain:FillBlock(cf, fillSize, Enum.Material.Grass)
+end)
 
 -- Simple spawn creation
 local function createSpawn(name, team, position)
@@ -1366,59 +2303,55 @@ end)
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="20">
+  <Item class="StarterPlayer" referent="22">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="21">
+    <Item class="StarterCharacterScripts" referent="23">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
     </Item>
-    <Item class="StarterPlayerScripts" referent="22">
+    <Item class="StarterPlayerScripts" referent="24">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="23">
+      <Item class="LocalScript" referent="25">
         <Properties>
           <string name="Name">DisableChat</string>
-          <string name="Source"><![CDATA[-- Gentle chat disabling that doesn't interfere with Roblox's core systems
+          <string name="Source"><![CDATA[-- Immediate chat disabling to prevent ChatScript errors
 local StarterGui = game:GetService("StarterGui")
-local RunService = game:GetService("RunService")
 
--- Wait for game to fully load before attempting chat modifications
-local function safeDisableChat()
-    -- Only disable the visible chat UI, don't interfere with internal systems
+-- Disable chat immediately, before other scripts can interfere
+pcall(function()
+    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+end)
+
+-- Additional cleanup after a brief delay
+task.spawn(function()
+    task.wait(1)
+
+    -- Ensure chat stays disabled
     pcall(function()
         StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
     end)
 
-    -- Hide chat bar if it exists
+    -- Try to clear any remaining chat elements
     pcall(function()
-        StarterGui:SetCore("ChatMakeSystemMessage", {
-            Text = "";
-            Color = Color3.new(1, 1, 1);
-            Font = Enum.Font.SourceSans;
-            FontSize = Enum.FontSize.Size14;
-        })
+        local success = pcall(function()
+            StarterGui:SetCore("ChatActive", false)
+        end)
+        if not success then
+            -- If ChatActive doesn't work, try alternative
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+        end
     end)
-end
-
--- Wait for the game to be ready before disabling chat
-if game:IsLoaded() then
-    task.wait(2) -- Give Roblox time to initialize core systems
-    safeDisableChat()
-else
-    game.Loaded:Connect(function()
-        task.wait(2) -- Give Roblox time to initialize core systems
-        safeDisableChat()
-    end)
-end
+end)
 
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="24">
+      <Item class="LocalScript" referent="26">
         <Properties>
           <string name="Name">DisableClassicChat</string>
           <string name="Source"><![CDATA[-- This script is now disabled to avoid conflicts with Roblox's core chat systems
@@ -1429,11 +2362,51 @@ print("[DisableClassicChat] Chat disabling handled by main DisableChat script")
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="25">
+      <Item class="Folder" referent="27">
         <Properties>
           <string name="Name">Input</string>
         </Properties>
-        <Item class="LocalScript" referent="26">
+        <Item class="LocalScript" referent="28">
+          <Properties>
+            <string name="Name">Construction</string>
+            <string name="Source"><![CDATA[-- Client input: press B to request construction
+
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Events
+do
+    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
+    if ok and mod then Events = mod else
+        local folder = ReplicatedStorage:WaitForChild("Remotes", 5)
+        local function get(name)
+            return folder and (folder:FindFirstChild(name) or folder:WaitForChild(name, 5)) or nil
+        end
+        Events = { Construction = get("ConstructionRequest") }
+    end
+end
+
+local debounce = false
+local COOLDOWN = 0.5
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.B then
+        if debounce then return end
+        debounce = true
+        if Events and Events.Construction then
+            print("[Construction] Sending build request (B pressed)")
+            Events.Construction:FireServer()
+        else
+            warn("[Construction] Remote missing; server may not be ready")
+        end
+        task.delay(COOLDOWN, function() debounce = false end)
+    end
+end)
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="LocalScript" referent="29">
           <Properties>
             <string name="Name">InputController</string>
             <string name="Source"><![CDATA[local UserInputService = game:GetService("UserInputService")
@@ -1513,11 +2486,11 @@ end)
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="27">
+      <Item class="Folder" referent="30">
         <Properties>
           <string name="Name">UI</string>
         </Properties>
-        <Item class="LocalScript" referent="28">
+        <Item class="LocalScript" referent="31">
           <Properties>
             <string name="Name">Hud</string>
             <string name="Source">-- Enhanced HUD with clear score display, timer, and team assignment
