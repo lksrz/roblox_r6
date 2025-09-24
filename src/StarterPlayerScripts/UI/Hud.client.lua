@@ -28,7 +28,19 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.DisplayOrder = 5
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Wait for PlayerGui to be ready and avoid conflicts
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Clean up any existing HUD
+local existingHUD = playerGui:FindFirstChild("HUD")
+if existingHUD then
+    existingHUD:Destroy()
+end
+
+-- Add GUI to PlayerGui after a brief delay to avoid styling conflicts
+task.wait(0.5)
+gui.Parent = playerGui
 
 -- Main container (wider, more prominent)
 local container = Instance.new("Frame")

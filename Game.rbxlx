@@ -536,12 +536,22 @@ local function startFollowing(plr)
 end
 
 function ObjectiveService.StartRound(redSpawnPos)
-    -- start new round
+    -- Stop following and clear carrier from previous round
+    stopFollowing()
+    carrier = nil
+
+    -- Destroy existing objective model
+    if objectiveModel then
+        objectiveModel:Destroy()
+        objectiveModel = nil
+    end
+    objectivePrompt = nil
+
+    -- Set spawn positions for this round
     redSpawnPosition = redSpawnPos
     roundStartTime = nil  -- Don't start timer yet, wait for StartTimer()
 
-    -- Clean up existing objective and carrier
-    ObjectiveService.CleanupObjective()
+    print("[ObjectiveService] StartRound called with RedSpawn:", redSpawnPos)
 
     -- Find green spawn position (should be at (200, 1.5, 200))
     local greenSpawn = workspace:FindFirstChild("GreenSpawn")
@@ -1372,26 +1382,38 @@ end)
       <Item class="LocalScript" referent="23">
         <Properties>
           <string name="Name">DisableChat</string>
-          <string name="Source"><![CDATA[local StarterGui = game:GetService("StarterGui")
+          <string name="Source"><![CDATA[-- Gentle chat disabling that doesn't interfere with Roblox's core systems
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
-pcall(function()
-    StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-end)
+-- Wait for game to fully load before attempting chat modifications
+local function safeDisableChat()
+    -- Only disable the visible chat UI, don't interfere with internal systems
+    pcall(function()
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+    end)
 
-pcall(function()
-    local tcs = game:GetService("TextChatService")
-    if tcs then
-        if tcs:FindFirstChild("ChatWindowConfiguration") and tcs.ChatWindowConfiguration then
-            tcs.ChatWindowConfiguration.Enabled = false
-        end
-        if tcs:FindFirstChild("ChatInputBarConfiguration") and tcs.ChatInputBarConfiguration then
-            tcs.ChatInputBarConfiguration.Enabled = false
-        end
-        if tcs:FindFirstChild("BubbleChatConfiguration") and tcs.BubbleChatConfiguration then
-            tcs.BubbleChatConfiguration.Enabled = false
-        end
-    end
-end)
+    -- Hide chat bar if it exists
+    pcall(function()
+        StarterGui:SetCore("ChatMakeSystemMessage", {
+            Text = "";
+            Color = Color3.new(1, 1, 1);
+            Font = Enum.Font.SourceSans;
+            FontSize = Enum.FontSize.Size14;
+        })
+    end)
+end
+
+-- Wait for the game to be ready before disabling chat
+if game:IsLoaded() then
+    task.wait(2) -- Give Roblox time to initialize core systems
+    safeDisableChat()
+else
+    game.Loaded:Connect(function()
+        task.wait(2) -- Give Roblox time to initialize core systems
+        safeDisableChat()
+    end)
+end
 
 ]]></string>
         </Properties>
@@ -1399,35 +1421,11 @@ end)
       <Item class="LocalScript" referent="24">
         <Properties>
           <string name="Name">DisableClassicChat</string>
-          <string name="Source"><![CDATA[-- Suppress Classic Chat LocalScripts to avoid SetCore errors in Studio
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerScripts = player:WaitForChild("PlayerScripts", 10)
+          <string name="Source"><![CDATA[-- This script is now disabled to avoid conflicts with Roblox's core chat systems
+-- All chat disabling is handled by DisableChat.client.lua using proper APIs
 
--- Create a parked folder to avoid parenting-to-nil warnings
-local disabledFolder = Instance.new("Folder")
-disabledFolder.Name = "DisabledChat"
-disabledFolder.Parent = playerScripts
-
-local function tryDisable(child)
-    if not child or not child:IsA("LocalScript") then return end
-    local n = child.Name
-    if n == "ChatScript" or n == "BubbleChat" or n == "ChatMain" then
-        -- Only disable and move if it's still in PlayerScripts
-        if child.Parent == playerScripts then
-            pcall(function() child.Enabled = false end)
-            -- Move into a disabled folder instead of Destroying to avoid warnings
-            pcall(function() child.Parent = disabledFolder end)
-        end
-    end
-end
-
-if playerScripts then
-    for _, ch in ipairs(playerScripts:GetChildren()) do
-        tryDisable(ch)
-    end
-    playerScripts.ChildAdded:Connect(tryDisable)
-end
+-- Keeping this file for compatibility but doing nothing to avoid errors
+print("[DisableClassicChat] Chat disabling handled by main DisableChat script")
 ]]></string>
         </Properties>
       </Item>
@@ -1552,7 +1550,19 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.DisplayOrder = 5
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Wait for PlayerGui to be ready and avoid conflicts
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Clean up any existing HUD
+local existingHUD = playerGui:FindFirstChild("HUD")
+if existingHUD then
+    existingHUD:Destroy()
+end
+
+-- Add GUI to PlayerGui after a brief delay to avoid styling conflicts
+task.wait(0.5)
+gui.Parent = playerGui
 
 -- Main container (wider, more prominent)
 local container = Instance.new("Frame")

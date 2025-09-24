@@ -1,21 +1,29 @@
+-- Immediate chat disabling to prevent ChatScript errors
 local StarterGui = game:GetService("StarterGui")
 
+-- Disable chat immediately, before other scripts can interfere
 pcall(function()
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
 end)
 
-pcall(function()
-    local tcs = game:GetService("TextChatService")
-    if tcs then
-        if tcs:FindFirstChild("ChatWindowConfiguration") and tcs.ChatWindowConfiguration then
-            tcs.ChatWindowConfiguration.Enabled = false
+-- Additional cleanup after a brief delay
+task.spawn(function()
+    task.wait(1)
+
+    -- Ensure chat stays disabled
+    pcall(function()
+        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+    end)
+
+    -- Try to clear any remaining chat elements
+    pcall(function()
+        local success = pcall(function()
+            StarterGui:SetCore("ChatActive", false)
+        end)
+        if not success then
+            -- If ChatActive doesn't work, try alternative
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
         end
-        if tcs:FindFirstChild("ChatInputBarConfiguration") and tcs.ChatInputBarConfiguration then
-            tcs.ChatInputBarConfiguration.Enabled = false
-        end
-        if tcs:FindFirstChild("BubbleChatConfiguration") and tcs.BubbleChatConfiguration then
-            tcs.BubbleChatConfiguration.Enabled = false
-        end
-    end
+    end)
 end)
 

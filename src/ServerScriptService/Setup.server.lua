@@ -45,6 +45,19 @@ if Config.forceR6 then
     end)
 end
 
+-- Disable chat at the server level to prevent client-side ChatScript errors
+pcall(function()
+    local StarterGui = game:GetService("StarterGui")
+    -- Set server-wide chat settings
+    StarterGui.ShowDevelopmentGui = false
+
+    -- Try to disable chat service if available
+    local TextChatService = game:GetService("TextChatService")
+    if TextChatService then
+        TextChatService.ChatVersion = Enum.ChatVersion.LegacyChatService
+    end
+end)
+
 -- Simple team creation
 local function createTeam(name, brickColor)
     local team = Instance.new("Team")
