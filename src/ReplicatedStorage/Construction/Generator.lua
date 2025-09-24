@@ -645,7 +645,7 @@ local function ensureGlobalConnectivity(rooms: {Rect}, corridors: {Rect}, doors,
 end
 
 -- Emit interior walls for room<->corridor borders with door holes
-local function emitInteriorWalls(container: Instance, rooms: {Rect}, halls: {Rect}, doors, cfg)
+local function emitInteriorWalls(container: Instance, rooms: {Rect}, halls: {Rect}, doors, cfg, openingsFolder)
     local color = cfg.Colors.InteriorWalls or cfg.Colors.Walls
     local mats = cfg.Materials or {}
     local mat = mats.InteriorWalls or mats.Walls or Enum.Material.Concrete
@@ -710,11 +710,54 @@ local function emitInteriorWalls(container: Instance, rooms: {Rect}, halls: {Rec
                 emitWallBandParts(container, color, edge, 0, cfg.WallHeight, {}, thick, mat)
             end
         end
+        -- Create board-up proxies for each opening on this line (passages)
+        if openingsFolder then
+            for _, iv in ipairs(opens) do
+                local s, e = iv.s, iv.e
+                if e > s then
+                    local mid = (s + e) * 0.5
+                    local len = e - s
+                    local h = cfg.WallHeight
+                    local thickLocal = math.max(0.2, cfg.WallThickness - 0.05)
+                    local p = Instance.new("Part")
+                    p.Name = "Opening_Passage"
+                    p.Anchored = true
+                    p.CanCollide = false
+                    p.Transparency = 1
+                    p.Material = Enum.Material.Air
+                    if entry.axis == "x" then
+                        p.Size = Vector3.new(len, h, thickLocal)
+                        p.CFrame = CFrame.new(mid, h * 0.5, entry.pos)
+                    else
+                        p.Size = Vector3.new(thickLocal, h, len)
+                        p.CFrame = CFrame.new(entry.pos, h * 0.5, mid)
+                    end
+                    p:SetAttribute("Axis", entry.axis)
+                    p:SetAttribute("Pos", entry.pos)
+                    p:SetAttribute("S", s)
+                    p:SetAttribute("E", e)
+                    p:SetAttribute("Y0", 0)
+                    p:SetAttribute("Y1", h)
+                    p:SetAttribute("Kind", "Passage")
+                    p.Parent = openingsFolder
+
+                    local boardCfg = cfg.BOARDUP or {}
+                    local prompt = Instance.new("ProximityPrompt")
+                    prompt.ActionText = "Board Up"
+                    prompt.ObjectText = "Passage"
+                    prompt.HoldDuration = boardCfg.Hold or 0.2
+                    prompt.MaxActivationDistance = boardCfg.Distance or 12
+                    prompt.KeyboardKeyCode = boardCfg.KeyCode or Enum.KeyCode.E
+                    prompt.RequiresLineOfSight = false
+                    prompt.Parent = p
+                end
+            end
+        end
     end
 end
 
 -- Emit exterior walls with doors and window openings
-local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorDoors, cfg, interiorEdges)
+local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorDoors, cfg, interiorEdges, openingsFolder)
     local color = cfg.Colors.Walls
     local mats = cfg.Materials or {}
     local mat = mats.Walls or Enum.Material.Concrete
@@ -783,6 +826,50 @@ local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorD
         end
         if yTop > yD0 then
             emitWallBandParts(container, color, edge, yD0, yTop, {}, thick, mat)
+        end
+        -- Register openings for board-up
+        if openingsFolder then
+            local function register(kind, interval, oy0, oy1)
+                local s, e = interval.s, interval.e
+                if e <= s then return end
+                local mid = (s + e) * 0.5
+                local h = math.max(0.1, oy1 - oy0)
+                local len = e - s
+                local thickLocal = math.max(0.2, cfg.WallThickness - 0.05)
+                local p = Instance.new("Part")
+                p.Name = string.format("Opening_%s", kind)
+                p.Anchored = true
+                p.CanCollide = false
+                p.Transparency = 1
+                p.Material = Enum.Material.Air
+                if edge.axis == "x" then
+                    p.Size = Vector3.new(len, h, thickLocal)
+                    p.CFrame = CFrame.new(mid, oy0 + h * 0.5, edge.pos)
+                else
+                    p.Size = Vector3.new(thickLocal, h, len)
+                    p.CFrame = CFrame.new(edge.pos, oy0 + h * 0.5, mid)
+                end
+                p:SetAttribute("Axis", edge.axis)
+                p:SetAttribute("Pos", edge.pos)
+                p:SetAttribute("S", s)
+                p:SetAttribute("E", e)
+                p:SetAttribute("Y0", oy0)
+                p:SetAttribute("Y1", oy1)
+                p:SetAttribute("Kind", kind)
+                p.Parent = openingsFolder
+
+                local boardCfg = cfg.BOARDUP or {}
+                local prompt = Instance.new("ProximityPrompt")
+                prompt.ActionText = "Board Up"
+                prompt.ObjectText = kind
+                prompt.HoldDuration = boardCfg.Hold or 0.2
+                prompt.MaxActivationDistance = boardCfg.Distance or 12
+                prompt.KeyboardKeyCode = boardCfg.KeyCode or Enum.KeyCode.E
+                prompt.RequiresLineOfSight = false
+                prompt.Parent = p
+            end
+            for _, d in ipairs(doorIntervals) do register("DoorExterior", d, 0, doorH) end
+            for _, w in ipairs(windowIntervals) do register("Window", w, sill, wTop) end
         end
     end
 end
@@ -899,6 +986,7 @@ function Generator.Generate(originCFrame: CFrame, cfg)
     local wallsFolder = Instance.new("Folder"); wallsFolder.Name = "Walls"; wallsFolder.Parent = model
     local floorsFolder = Instance.new("Folder"); floorsFolder.Name = "Floors"; floorsFolder.Parent = model
     local roofFolder = Instance.new("Folder"); roofFolder.Name = "Roof"; roofFolder.Parent = model
+    local openingsFolder = Instance.new("Folder"); openingsFolder.Name = "Openings"; openingsFolder.Parent = model
 
     visualizeRects(model, rooms, corridors, cfg)
 
@@ -928,10 +1016,10 @@ function Generator.Generate(originCFrame: CFrame, cfg)
     end
 
     -- Interior walls between rooms and corridors
-    emitInteriorWalls(wallsFolder, rooms, corridors, doors, cfg)
+    emitInteriorWalls(wallsFolder, rooms, corridors, doors, cfg, openingsFolder)
     -- Exterior walls with windows and exterior doors
     local interiorEdges = gatherInteriorEdges(rooms, corridors)
-    emitExteriorWalls(wallsFolder, footprint, extDoors, cfg, interiorEdges)
+    emitExteriorWalls(wallsFolder, footprint, extDoors, cfg, interiorEdges, openingsFolder)
 
     -- Compute largest room center (in local space), then transform to world space
     local largestArea = -1

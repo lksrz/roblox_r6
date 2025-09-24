@@ -107,6 +107,7 @@ local function buildProceduralAt(origin: CFrame)
             GenerateRoof = true,
             Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0, FloorOffset = 0.5 },
             Debug = { Print = true, VisualizeRects = false, Randomize = true },
+            BOARDUP = { PlankWidth = 1.5, PlankThickness = 0.2, Hold = 0.2, MaxBoardsPerOpening = 24, MaxPerMinute = 30, KeyCode = Enum.KeyCode.E, Distance = 12, Material = Enum.Material.WoodPlanks, Color = Color3.fromRGB(155,120,80) },
         }
     end
 
@@ -219,6 +220,12 @@ local function buildProceduralAt(origin: CFrame)
         local grassThick = 32
         local grassCF = CFrame.new(bboxCF.Position.X, grassTop - grassThick * 0.5, bboxCF.Position.Z)
         terrain:FillBlock(grassCF, Vector3.new(extentX, grassThick, extentZ), Enum.Material.Grass)
+    end)
+
+    -- Attach board-up interactions
+    pcall(function()
+        local BoardUp = require(script.Parent:WaitForChild("BoardUpService"))
+        BoardUp.Attach(model, buildCfg.BOARDUP or {})
     end)
 end
 

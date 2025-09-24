@@ -97,6 +97,18 @@ local Config = {
             VisualizeRects = false,
             Randomize = true,
         },
+
+        BOARDUP = {
+            PlankWidth = 1.5,
+            PlankThickness = 0.2,
+            Hold = 0.2,
+            MaxBoardsPerOpening = 24,
+            MaxPerMinute = 30,
+            KeyCode = Enum.KeyCode.E,
+            Distance = 12,
+            Material = Enum.Material.WoodPlanks,
+            Color = Color3.fromRGB(155, 120, 80),
+        },
     },
 }
 

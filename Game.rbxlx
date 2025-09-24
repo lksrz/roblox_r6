@@ -139,7 +139,7 @@ end
 local function planDoors(rng: Random, rooms: {Rect}, corridors: {Rect}, cfg)
     local doors = {} :: { [string]: { center: number, width: number } }
     local width = math.max(cfg.Door.Width or 6, (cfg.Door.MinWidth or 0))
-    local maxPerRoom = 2
+    local maxPerRoom = 1
     local function edgeKey(edge: Edge)
         local function r(v) return string.format("%.2f", v) end
         return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
@@ -166,6 +166,20 @@ local function planDoors(rng: Random, rooms: {Rect}, corridors: {Rect}, cfg)
                 doors[edgeKey(edge)] = { center = center, width = width }
                 count = count + 1
                 if count >= maxPerRoom then break end
+            end
+        end
+        -- Fallback: guarantee at least one doorway per room
+        if count == 0 and #candidates > 0 then
+            -- pick the longest shared edge and place a centered door, clamped to edge length
+            local best, bestLen
+            for _, edge in ipairs(candidates) do
+                local len = edge.e - edge.s
+                if (not best) or (len > bestLen) then best, bestLen = edge, len end
+            end
+            if best and bestLen and bestLen > 0.5 then
+                local desired = math.min(width, bestLen - 0.2)
+                local center = (best.s + best.e) * 0.5
+                doors[edgeKey(best)] = { center = center, width = math.max(2, desired) }
             end
         end
     end
@@ -247,9 +261,13 @@ end
 local function emitWallBandParts(container: Instance, color: Color3, edge: Edge, bandY0: number, bandY1: number, openings, thickness: number, material: Enum.Material?)
     if bandY1 <= bandY0 then return end
     local segs = (#openings > 0) and subtractIntervals(edge.s, edge.e, openings) or { { s = edge.s, e = edge.e } }
+    -- Small seam padding so adjacent segments from separate edges overlap slightly
+    local seamPad = 0.2
     for _, seg in ipairs(segs) do
-        local mid = (seg.s + seg.e) * 0.5
-        local len = seg.e - seg.s
+        local s = seg.s - seamPad
+        local e = seg.e + seamPad
+        local mid = (s + e) * 0.5
+        local len = e - s
         if len > 0.05 then
             local part = Instance.new("Part")
             part.Anchored = true
@@ -334,39 +352,424 @@ local function computeJunctionExclusionsForEdge(exteriorEdge: Edge, interiorEdge
     return exclusions
 end
 
+-- Corridor connectivity utilities
+local function rectsOverlap(a: Rect, b: Rect, eps: number?)
+    eps = eps or 1e-3
+    local sX = math.max(a.x0, b.x0)
+    local eX = math.min(a.x1, b.x1)
+    local sZ = math.max(a.z0, b.z0)
+    local eZ = math.min(a.z1, b.z1)
+    return (eX - sX) > -eps and (eZ - sZ) > -eps
+end
+
+local function centerOf(r: Rect)
+    return (r.x0 + r.x1) * 0.5, (r.z0 + r.z1) * 0.5
+end
+
+-- Ensure all corridor rectangles form a single connected set by adding L-shaped connectors
+local function connectCorridors(corridors: {Rect}, footprint: Rect, cw: number)
+    if #corridors == 0 then return corridors end
+    -- pick root as corridor nearest to building center (0,0) in local space
+    local rootIndex = 1
+    local bestD = math.huge
+    for i, c in ipairs(corridors) do
+        local cx, cz = centerOf(c)
+        local d = math.abs(cx) + math.abs(cz)
+        if d < bestD then bestD = d; rootIndex = i end
+    end
+
+    local function recomputeReachable()
+        local reachable = {}
+        local queue = { rootIndex }
+        reachable[rootIndex] = true
+        local qi = 1
+        while qi <= #queue do
+            local i = queue[qi]; qi = qi + 1
+            for j = 1, #corridors do
+                if not reachable[j] then
+                    if rectsOverlap(corridors[i], corridors[j], 0.0) then
+                        reachable[j] = true
+                        queue[#queue + 1] = j
+                    end
+                end
+            end
+        end
+        return reachable
+    end
+
+    local MAX_CONNECTORS = 64
+    local added = 0
+    while true do
+        local reachable = recomputeReachable()
+        local allReachable = true
+        local targetIndex = nil
+        for i = 1, #corridors do
+            if not reachable[i] then
+                allReachable = false
+                targetIndex = i
+                break
+            end
+        end
+        if allReachable or added >= MAX_CONNECTORS then break end
+
+        -- Find nearest reachable corridor to connect to
+        local tx, tz = centerOf(corridors[targetIndex])
+        local nearestIndex, nearestDist = nil, math.huge
+        for i = 1, #corridors do
+            if reachable[i] then
+                local cx, cz = centerOf(corridors[i])
+                local d = math.abs(cx - tx) + math.abs(cz - tz)
+                if d < nearestDist then nearestDist, nearestIndex = d, i end
+            end
+        end
+        if not nearestIndex then break end
+        local nx, nz = centerOf(corridors[nearestIndex])
+
+        -- L-shaped connection: first along X at z=tz, then along Z at x=nx
+        local aX0 = math.min(tx, nx)
+        local aX1 = math.max(tx, nx)
+        local connA = makeRect(aX0, tz - cw * 0.5, aX1, tz + cw * 0.5)
+        local bZ0 = math.min(tz, nz)
+        local bZ1 = math.max(tz, nz)
+        local connB = makeRect(nx - cw * 0.5, bZ0, nx + cw * 0.5, bZ1)
+
+        corridors[#corridors + 1] = connA
+        corridors[#corridors + 1] = connB
+        added = added + 2
+    end
+
+    return corridors
+end
+
+-- Ensure that every room has a doorway to a corridor that is connected
+local function ensureRoomAccess(rooms: {Rect}, corridors: {Rect}, doors, cfg)
+    local function edgeKey(edge: Edge)
+        local function r(v) return string.format("%.2f", v) end
+        return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
+    end
+
+    -- Precompute corridor connectivity (treat touching as connected)
+    local reachable = {}
+    local queue = { 1 }
+    if #corridors == 0 then return doors end
+    reachable[1] = true
+    local qi = 1
+    while qi <= #queue do
+        local i = queue[qi]; qi += 1
+        for j = 1, #corridors do
+            if not reachable[j] then
+                if rectsOverlap(corridors[i], corridors[j], 1e-3) then
+                    reachable[j] = true
+                    queue[#queue + 1] = j
+                end
+            end
+        end
+    end
+
+    local minW = math.max(cfg.Door.Width or 6, cfg.Door.MinWidth or 0)
+    local added = 0
+    for ri, room in ipairs(rooms) do
+        local candidate = nil
+        local bestLen = -1
+        -- If a door already exists on any edge, skip
+        local hasDoor = false
+        for ci, hall in ipairs(corridors) do
+            local e = sharedEdge(room, hall)
+            if e then
+                if doors[edgeKey(e)] then
+                    hasDoor = true; break
+                end
+                local len = e.e - e.s
+                if reachable[ci] and len > bestLen then
+                    candidate, bestLen = e, len
+                end
+            end
+        end
+        if not hasDoor and candidate and bestLen > 1 then
+            local width = math.min(minW, bestLen - 0.2)
+            local center = (candidate.s + candidate.e) * 0.5
+            doors[edgeKey(candidate)] = { center = center, width = math.max(2, width) }
+            added += 1
+        end
+    end
+    if added > 0 and cfg.Debug and cfg.Debug.Print then
+        warn(string.format("[Generator] ensureRoomAccess added %d fallback doors", added))
+    end
+    return doors
+end
+
+-- Enforce minimum spacing between doors along the same wall line, then re-ensure access per room
+local function enforceDoorSpacing(rooms: {Rect}, corridors: {Rect}, doors, cfg)
+    local minSpacing = (cfg.Door and cfg.Door.MinSpacing) or 0
+    if minSpacing <= 0 then return doors end
+
+    local function lineKeyFromEdge(axis, pos)
+        return axis .. ":" .. string.format("%.3f", pos)
+    end
+    local function edgeKey(edge: Edge)
+        local function r(v) return string.format("%.2f", v) end
+        return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
+    end
+
+    -- Bucket doors per line
+    local perLine = {}
+    for k, d in pairs(doors) do
+        local axis, pos = string.match(k, "^(%a):([%d%.-]+):")
+        if axis and pos then
+            local lk = axis .. ":" .. pos
+            local arr = perLine[lk]
+            if not arr then arr = {}; perLine[lk] = arr end
+            -- Extract center from key by re-parsing is brittle; store from d
+            arr[#arr + 1] = { key = k, center = d.center, width = d.width }
+        end
+    end
+
+    local kept = {}
+    for lk, arr in pairs(perLine) do
+        table.sort(arr, function(a,b) return a.center < b.center end)
+        local last = -math.huge
+        for _, item in ipairs(arr) do
+            if item.center - last >= minSpacing then
+                kept[item.key] = doors[item.key]
+                last = item.center
+            end
+        end
+    end
+
+    -- Re-ensure each room has at least one door after spacing filter
+    local filtered = kept
+    local minW = math.max(cfg.Door.Width or 6, cfg.Door.MinWidth or 0)
+    for _, room in ipairs(rooms) do
+        local has = false
+        local candidate, bestLen
+        for _, hall in ipairs(corridors) do
+            local e = sharedEdge(room, hall)
+            if e then
+                if filtered[edgeKey(e)] then has = true; break end
+                local len = e.e - e.s
+                if len > (bestLen or -1) then bestLen = len; candidate = e end
+            end
+        end
+        if not has and candidate and bestLen and bestLen > 1 then
+            local width = math.min(minW, bestLen - 0.2)
+            local center = (candidate.s + candidate.e) * 0.5
+            filtered[edgeKey(candidate)] = { center = center, width = math.max(2, width) }
+        end
+    end
+
+    return filtered
+end
+
+-- Final pass: ensure the graph of corridors + rooms (via doors) is a single component.
+-- Adds a single fallback door per unreachable room on its longest shared edge to any corridor
+-- Iterate up to a safety cap to converge.
+local function ensureGlobalConnectivity(rooms: {Rect}, corridors: {Rect}, doors, cfg)
+    local function edgeKey(edge: Edge)
+        local function r(v) return string.format("%.2f", v) end
+        return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
+    end
+
+    local minW = math.max(cfg.Door.Width or 6, cfg.Door.MinWidth or 0)
+
+    local function computeReachable()
+        local rc = #corridors
+        if rc == 0 then return {}, {} end
+        local reachableC = table.create(rc, false)
+        local reachableR = table.create(#rooms, false)
+        local q = {}
+
+        local root = 1
+        reachableC[root] = true
+        q[#q + 1] = { t = "c", i = root }
+
+        while #q > 0 do
+            local cur = table.remove(q, 1)
+            if cur.t == "c" then
+                local i = cur.i
+                -- corridor->corridor
+                for j = 1, rc do
+                    if not reachableC[j] and rectsOverlap(corridors[i], corridors[j], 1e-3) then
+                        reachableC[j] = true
+                        q[#q + 1] = { t = "c", i = j }
+                    end
+                end
+                -- corridor->room via existing doors
+                for r = 1, #rooms do
+                    if not reachableR[r] then
+                        local e = sharedEdge(rooms[r], corridors[i])
+                        if e and doors[edgeKey(e)] then
+                            reachableR[r] = true
+                            q[#q + 1] = { t = "r", i = r }
+                        end
+                    end
+                end
+            else
+                local r = cur.i
+                -- room->corridor via existing doors
+                for j = 1, rc do
+                    if not reachableC[j] then
+                        local e = sharedEdge(rooms[r], corridors[j])
+                        if e and doors[edgeKey(e)] then
+                            reachableC[j] = true
+                            q[#q + 1] = { t = "c", i = j }
+                        end
+                    end
+                end
+            end
+        end
+        return reachableR, reachableC
+    end
+
+    local MAX_ITERS = 24
+    for _ = 1, MAX_ITERS do
+        local reachableR, reachableC = computeReachable()
+        local allOk = true
+        for ri = 1, #rooms do
+            if not reachableR[ri] then allOk = false break end
+        end
+        if allOk then break end
+
+        -- Add fallback door for first unreachable room
+        for ri = 1, #rooms do
+            if not reachableR[ri] then
+                local best, bestLen
+                for cj = 1, #corridors do
+                    -- Prefer corridors that are reachable in current graph
+                    if reachableC[cj] then
+                        local e = sharedEdge(rooms[ri], corridors[cj])
+                        if e then
+                            local len = e.e - e.s
+                            if len > (bestLen or -1) then best, bestLen = e, len end
+                        end
+                    end
+                end
+                if best and bestLen and bestLen > 1 then
+                    local width = math.min(minW, bestLen - 0.2)
+                    local center = (best.s + best.e) * 0.5
+                    doors[edgeKey(best)] = { center = center, width = math.max(2, width) }
+                end
+                break
+            end
+        end
+    end
+
+    return doors
+end
+
 -- Emit interior walls for room<->corridor borders with door holes
-local function emitInteriorWalls(container: Instance, rooms: {Rect}, halls: {Rect}, doors, cfg)
+local function emitInteriorWalls(container: Instance, rooms: {Rect}, halls: {Rect}, doors, cfg, openingsFolder)
     local color = cfg.Colors.InteriorWalls or cfg.Colors.Walls
     local mats = cfg.Materials or {}
     local mat = mats.InteriorWalls or mats.Walls or Enum.Material.Concrete
-    local doorH = cfg.Door.Height
     local thick = cfg.WallThickness
-    local edgeClear = math.max(0.25, (cfg.WallThickness or 1) * 0.25) -- side clearance (across corridor)
     local runPad = math.max(0, (cfg.Door and cfg.Door.Clearance) or 0) -- extra along-wall clearance
+
+    -- Aggregate coverage and openings per unique edge line to avoid seams between adjacent corridor slices
+    local lines = {} -- key -> { axis=..., pos=..., covers={}, opens={} }
+    local function lineKey(axis, pos)
+        return axis .. ":" .. string.format("%.3f", pos)
+    end
+
     for _, room in ipairs(rooms) do
         for _, hall in ipairs(halls) do
             local edge = sharedEdge(room, hall)
             if edge then
-                local function edgeKey(edge: Edge)
-                    local function r(v) return string.format("%.2f", v) end
-                    return table.concat({ edge.axis, r(edge.pos), r(edge.s), r(edge.e) }, ":")
+                local key = lineKey(edge.axis, edge.pos)
+                local entry = lines[key]
+                if not entry then
+                    entry = { axis = edge.axis, pos = edge.pos, covers = {}, opens = {} }
+                    lines[key] = entry
                 end
-                local doorIntervals = {}
-                local d = doors[edgeKey(edge)]
+                table.insert(entry.covers, { s = edge.s, e = edge.e })
+
+                -- door opening on this edge
+                local function dKey(e: Edge)
+                    local function r(v) return string.format("%.2f", v) end
+                    return table.concat({ e.axis, r(e.pos), r(e.s), r(e.e) }, ":")
+                end
+                local d = doors[dKey(edge)]
                 if d then
                     local s = d.center - d.width * 0.5 - runPad
                     local e = d.center + d.width * 0.5 + runPad
-                    table.insert(doorIntervals, { s = s, e = e })
+                    table.insert(entry.opens, { s = s, e = e })
                 end
-                -- Remove interior wall wherever the door interval is, across full height
-                emitWallBandParts(container, color, edge, 0, cfg.WallHeight, doorIntervals, thick, mat)
+            end
+        end
+    end
+
+    -- Merge intervals utility
+    local function mergeIntervals(ints)
+        table.sort(ints, function(a, b) return a.s < b.s end)
+        local out = {}
+        for _, iv in ipairs(ints) do
+            if #out == 0 or iv.s > out[#out].e then
+                out[#out + 1] = { s = iv.s, e = iv.e }
+            else
+                out[#out].e = math.max(out[#out].e, iv.e)
+            end
+        end
+        return out
+    end
+
+    for _, entry in pairs(lines) do
+        local covers = mergeIntervals(entry.covers)
+        local opens = entry.opens
+        -- For each cover span, subtract openings and emit one continuous band (full height) to avoid vertical seams
+        for _, cov in ipairs(covers) do
+            local kept = subtractIntervals(cov.s, cov.e, opens)
+            for _, seg in ipairs(kept) do
+                local edge = { axis = entry.axis, pos = entry.pos, s = seg.s, e = seg.e }
+                emitWallBandParts(container, color, edge, 0, cfg.WallHeight, {}, thick, mat)
+            end
+        end
+        -- Create board-up proxies for each opening on this line (passages)
+        if openingsFolder then
+            for _, iv in ipairs(opens) do
+                local s, e = iv.s, iv.e
+                if e > s then
+                    local mid = (s + e) * 0.5
+                    local len = e - s
+                    local h = cfg.WallHeight
+                    local thickLocal = math.max(0.2, cfg.WallThickness - 0.05)
+                    local p = Instance.new("Part")
+                    p.Name = "Opening_Passage"
+                    p.Anchored = true
+                    p.CanCollide = false
+                    p.Transparency = 1
+                    p.Material = Enum.Material.Air
+                    if entry.axis == "x" then
+                        p.Size = Vector3.new(len, h, thickLocal)
+                        p.CFrame = CFrame.new(mid, h * 0.5, entry.pos)
+                    else
+                        p.Size = Vector3.new(thickLocal, h, len)
+                        p.CFrame = CFrame.new(entry.pos, h * 0.5, mid)
+                    end
+                    p:SetAttribute("Axis", entry.axis)
+                    p:SetAttribute("Pos", entry.pos)
+                    p:SetAttribute("S", s)
+                    p:SetAttribute("E", e)
+                    p:SetAttribute("Y0", 0)
+                    p:SetAttribute("Y1", h)
+                    p:SetAttribute("Kind", "Passage")
+                    p.Parent = openingsFolder
+
+                    local boardCfg = cfg.BOARDUP or {}
+                    local prompt = Instance.new("ProximityPrompt")
+                    prompt.ActionText = "Board Up"
+                    prompt.ObjectText = "Passage"
+                    prompt.HoldDuration = boardCfg.Hold or 0.2
+                    prompt.MaxActivationDistance = boardCfg.Distance or 12
+                    prompt.KeyboardKeyCode = boardCfg.KeyCode or Enum.KeyCode.E
+                    prompt.RequiresLineOfSight = false
+                    prompt.Parent = p
+                end
             end
         end
     end
 end
 
 -- Emit exterior walls with doors and window openings
-local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorDoors, cfg, interiorEdges)
+local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorDoors, cfg, interiorEdges, openingsFolder)
     local color = cfg.Colors.Walls
     local mats = cfg.Materials or {}
     local mat = mats.Walls or Enum.Material.Concrete
@@ -436,6 +839,50 @@ local function emitExteriorWalls(container: Instance, footprint: Rect, exteriorD
         if yTop > yD0 then
             emitWallBandParts(container, color, edge, yD0, yTop, {}, thick, mat)
         end
+        -- Register openings for board-up
+        if openingsFolder then
+            local function register(kind, interval, oy0, oy1)
+                local s, e = interval.s, interval.e
+                if e <= s then return end
+                local mid = (s + e) * 0.5
+                local h = math.max(0.1, oy1 - oy0)
+                local len = e - s
+                local thickLocal = math.max(0.2, cfg.WallThickness - 0.05)
+                local p = Instance.new("Part")
+                p.Name = string.format("Opening_%s", kind)
+                p.Anchored = true
+                p.CanCollide = false
+                p.Transparency = 1
+                p.Material = Enum.Material.Air
+                if edge.axis == "x" then
+                    p.Size = Vector3.new(len, h, thickLocal)
+                    p.CFrame = CFrame.new(mid, oy0 + h * 0.5, edge.pos)
+                else
+                    p.Size = Vector3.new(thickLocal, h, len)
+                    p.CFrame = CFrame.new(edge.pos, oy0 + h * 0.5, mid)
+                end
+                p:SetAttribute("Axis", edge.axis)
+                p:SetAttribute("Pos", edge.pos)
+                p:SetAttribute("S", s)
+                p:SetAttribute("E", e)
+                p:SetAttribute("Y0", oy0)
+                p:SetAttribute("Y1", oy1)
+                p:SetAttribute("Kind", kind)
+                p.Parent = openingsFolder
+
+                local boardCfg = cfg.BOARDUP or {}
+                local prompt = Instance.new("ProximityPrompt")
+                prompt.ActionText = "Board Up"
+                prompt.ObjectText = kind
+                prompt.HoldDuration = boardCfg.Hold or 0.2
+                prompt.MaxActivationDistance = boardCfg.Distance or 12
+                prompt.KeyboardKeyCode = boardCfg.KeyCode or Enum.KeyCode.E
+                prompt.RequiresLineOfSight = false
+                prompt.Parent = p
+            end
+            for _, d in ipairs(doorIntervals) do register("DoorExterior", d, 0, doorH) end
+            for _, w in ipairs(windowIntervals) do register("Window", w, sill, wTop) end
+        end
     end
 end
 
@@ -475,7 +922,7 @@ local function visualizeRects(container: Instance, rooms: {Rect}, halls: {Rect},
 end
 
 -- Emit flat floor parts for corridors/rooms (optional)
-local function emitFloors(container: Instance, rects: {Rect}, color: Color3, material: Enum.Material?)
+local function emitFloors(container: Instance, rects: {Rect}, color: Color3, material: Enum.Material?, yOffset: number)
     for _, r in ipairs(rects) do
         local p = Instance.new("Part")
         p.Anchored = true
@@ -486,16 +933,26 @@ local function emitFloors(container: Instance, rects: {Rect}, color: Color3, mat
         if material then p.Material = material end
         local cx, cz = rectCenter(r)
         p.Size = Vector3.new(rectWidth(r), 0.2, rectLength(r))
-        p.CFrame = CFrame.new(cx, 0.1, cz)
+        p.CFrame = CFrame.new(cx, 0.1 + (yOffset or 0), cz)
         p.Parent = container
     end
 end
 
-local function emitSlab(container: Instance, name: string, rect: Rect, wallThick: number, extend: number, y: number, thickness: number, color: Color3, material: Enum.Material?)
-    local x0 = rect.x0 - wallThick * 0.5 - (extend or 0)
-    local x1 = rect.x1 + wallThick * 0.5 + (extend or 0)
-    local z0 = rect.z0 - wallThick * 0.5 - (extend or 0)
-    local z1 = rect.z1 + wallThick * 0.5 + (extend or 0)
+local function emitSlab(container: Instance, name: string, rect: Rect, wallThick: number, extend: number, y: number, thickness: number, color: Color3, material: Enum.Material?, fillUnderExteriorWalls: boolean?)
+    local x0, x1, z0, z1
+    if fillUnderExteriorWalls then
+        -- Expand to include area beneath exterior walls
+        x0 = rect.x0 - wallThick * 0.5 - (extend or 0)
+        x1 = rect.x1 + wallThick * 0.5 + (extend or 0)
+        z0 = rect.z0 - wallThick * 0.5 - (extend or 0)
+        z1 = rect.z1 + wallThick * 0.5 + (extend or 0)
+    else
+        -- Shrink so we DO NOT place slab under exterior walls
+        x0 = rect.x0 + wallThick * 0.5 + (extend or 0)
+        x1 = rect.x1 - wallThick * 0.5 - (extend or 0)
+        z0 = rect.z0 + wallThick * 0.5 + (extend or 0)
+        z1 = rect.z1 - wallThick * 0.5 - (extend or 0)
+    end
     local cx = (x0 + x1) * 0.5
     local cz = (z0 + z1) * 0.5
     local p = Instance.new("Part")
@@ -528,7 +985,12 @@ function Generator.Generate(originCFrame: CFrame, cfg)
     local rooms, corridors = bspPartition(rng, footprint, cfg)
     local extDoors
     extDoors, corridors = planExteriorDoorsAndEntrances(rng, footprint, corridors, cfg)
+    -- Force corridor graph to be connected to avoid isolated areas
+    corridors = connectCorridors(corridors, footprint, cfg.CorridorWidth)
     local doors = planDoors(rng, rooms, corridors, cfg)
+    doors = ensureRoomAccess(rooms, corridors, doors, cfg)
+    doors = enforceDoorSpacing(rooms, corridors, doors, cfg)
+    doors = ensureGlobalConnectivity(rooms, corridors, doors, cfg)
 
     local model = Instance.new("Model")
     model.Name = "GeneratedBuilding"
@@ -536,20 +998,24 @@ function Generator.Generate(originCFrame: CFrame, cfg)
     local wallsFolder = Instance.new("Folder"); wallsFolder.Name = "Walls"; wallsFolder.Parent = model
     local floorsFolder = Instance.new("Folder"); floorsFolder.Name = "Floors"; floorsFolder.Parent = model
     local roofFolder = Instance.new("Folder"); roofFolder.Name = "Roof"; roofFolder.Parent = model
+    local openingsFolder = Instance.new("Folder"); openingsFolder.Name = "Openings"; openingsFolder.Parent = model
 
     visualizeRects(model, rooms, corridors, cfg)
 
     if cfg.GenerateFloors then
         local mats = cfg.Materials or {}
-        emitFloors(floorsFolder, rooms, cfg.Colors.Rooms, mats.Floor or Enum.Material.Wood)
-        emitFloors(floorsFolder, corridors, cfg.Colors.Corridors, mats.Floor or Enum.Material.Wood)
+        local offset = (cfg.Slab and cfg.Slab.FloorOffset) or 0
+        emitFloors(floorsFolder, rooms, cfg.Colors.Rooms, mats.Floor or Enum.Material.Wood, offset)
+        emitFloors(floorsFolder, corridors, cfg.Colors.Corridors, mats.Floor or Enum.Material.Wood, offset)
     end
 
     -- Single floor slab under everything
     if cfg.GenerateFloorSlab ~= false then
         local slabCfg = cfg.Slab or { FloorThickness = 1, Extend = 0 }
         local mats = cfg.Materials or {}
-        emitSlab(floorsFolder, "FloorSlab", footprint, cfg.WallThickness, slabCfg.Extend or 0, 0, slabCfg.FloorThickness or 1, cfg.Colors.Floor or cfg.Colors.Rooms, mats.Floor or Enum.Material.Wood)
+        local offset = slabCfg.FloorOffset or 0
+        -- Do not place floor under exterior walls: pass fillUnderExteriorWalls=false
+        emitSlab(floorsFolder, "FloorSlab", footprint, cfg.WallThickness, slabCfg.Extend or 0, 0 + offset, slabCfg.FloorThickness or 1, cfg.Colors.Floor or cfg.Colors.Rooms, mats.Floor or Enum.Material.Wood, false)
     end
 
     -- Single roof slab above everything
@@ -557,14 +1023,15 @@ function Generator.Generate(originCFrame: CFrame, cfg)
         local slabCfg = cfg.Slab or { RoofThickness = 1, Extend = 0 }
         local mats = cfg.Materials or {}
         local yTop = cfg.WallHeight
-        emitSlab(roofFolder, "RoofSlab", footprint, cfg.WallThickness, slabCfg.Extend or 0, yTop, slabCfg.RoofThickness or 1, cfg.Colors.Roof or cfg.Colors.Walls, mats.Roof or Enum.Material.SmoothPlastic)
+        -- Roof can extend under exterior walls for better coverage
+        emitSlab(roofFolder, "RoofSlab", footprint, cfg.WallThickness, slabCfg.Extend or 0, yTop, slabCfg.RoofThickness or 1, cfg.Colors.Roof or cfg.Colors.Walls, mats.Roof or Enum.Material.SmoothPlastic, true)
     end
 
     -- Interior walls between rooms and corridors
-    emitInteriorWalls(wallsFolder, rooms, corridors, doors, cfg)
+    emitInteriorWalls(wallsFolder, rooms, corridors, doors, cfg, openingsFolder)
     -- Exterior walls with windows and exterior doors
     local interiorEdges = gatherInteriorEdges(rooms, corridors)
-    emitExteriorWalls(wallsFolder, footprint, extDoors, cfg, interiorEdges)
+    emitExteriorWalls(wallsFolder, footprint, extDoors, cfg, interiorEdges, openingsFolder)
 
     -- Compute largest room center (in local space), then transform to world space
     local largestArea = -1
@@ -584,14 +1051,20 @@ function Generator.Generate(originCFrame: CFrame, cfg)
     end
 
     -- Determine floor top in local space (slab vs patches)
-    local slabTop = 0
-    if cfg.GenerateFloorSlab ~= false then
-        local slabCfg = cfg.Slab or {}
-        slabTop = slabCfg.FloorThickness or 1
-    end
-    local patchTop = (cfg.GenerateFloors and 0.2) or 0
-    local floorTopLocal = math.max(slabTop, patchTop)
+    local slabOffset = (cfg.Slab and cfg.Slab.FloorOffset) or 0
+    local slabThickness = (cfg.Slab and cfg.Slab.FloorThickness) or 1
+    local haveSlab = (cfg.GenerateFloorSlab ~= false)
+    local havePatches = (cfg.GenerateFloors == true)
+
+    local slabTopLocal = haveSlab and (slabThickness + slabOffset) or 0
+    local slabTopLocalBase = haveSlab and (slabThickness) or 0
+    local patchTopLocal = havePatches and (0.2 + slabOffset) or 0
+    local patchTopLocalBase = havePatches and 0.2 or 0
+
+    local floorTopLocal = math.max(slabTopLocal, patchTopLocal)
+    local floorBaseLocal = math.max(slabTopLocalBase, patchTopLocalBase)
     local floorTopWorld = originCFrame.Position.Y + floorTopLocal
+    local floorBaseWorld = originCFrame.Position.Y + floorBaseLocal
 
     -- Transform to originCFrame (rotation+translation); since we only used identity rotation, apply the full CFrame to children
     for _, inst in ipairs(model:GetDescendants()) do
@@ -601,7 +1074,7 @@ function Generator.Generate(originCFrame: CFrame, cfg)
     end
 
     model.Parent = Workspace
-    return model, { largestRoomCenter = largestCenterWorld, floorTopY = floorTopWorld }
+    return model, { largestRoomCenter = largestCenterWorld, floorTopY = floorTopWorld, floorBaseY = floorBaseWorld }
 end
 
 return Generator
@@ -656,6 +1129,9 @@ Events.HitConfirm = ensure("HitConfirm", "RemoteEvent")
 Events.Objective = ensure("ObjectiveEvent", "RemoteEvent")
 -- Construction/building requests
 Events.Construction = ensure("ConstructionRequest", "RemoteEvent")
+Events.BoardUp = ensure("BoardUpRequest", "RemoteEvent")
+-- Debug/minimap update
+Events.ConstructionMap = ensure("ConstructionMap", "RemoteEvent")
 
 return Events
 ]]></string>
@@ -723,7 +1199,7 @@ local Config = {
         -- Structure
         WallHeight = 16.8, -- +20% from 14
         WallThickness = 2,
-        CorridorWidth = 10,
+        CorridorWidth = 12,
 
         -- Rooms (BSP partition constraints)
         Room = {
@@ -732,7 +1208,7 @@ local Config = {
         },
 
         -- Openings
-        Door = { Width = 8, MinWidth = 8, Height = 9, Clearance = 3 },
+        Door = { Width = 10, MinWidth = 12, Height = 9, Clearance = 3, MinSpacing = 18 },
         ExteriorDoors = 2,
         Window = {
             Width = 6,
@@ -762,11 +1238,23 @@ local Config = {
         GenerateFloors = false, -- per-room/corridor thin floor patches
         GenerateFloorSlab = true, -- one big floor under whole building
         GenerateRoof = true,      -- one big roof above walls
-        Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0 },
+        Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0, FloorOffset = 0.5 },
         Debug = {
             Print = true,
             VisualizeRects = false,
             Randomize = true,
+        },
+
+        BOARDUP = {
+            PlankWidth = 1.5,
+            PlankThickness = 0.2,
+            Hold = 0.2,
+            MaxBoardsPerOpening = 24,
+            MaxPerMinute = 30,
+            KeyCode = Enum.KeyCode.E,
+            Distance = 12,
+            Material = Enum.Material.WoodPlanks,
+            Color = Color3.fromRGB(155, 120, 80),
         },
     },
 }
@@ -886,6 +1374,158 @@ local ConstructionService = require(script.Parent.ConstructionService)
       </Properties>
       <Item class="ModuleScript" referent="12">
         <Properties>
+          <string name="Name">BoardUpService</string>
+          <string name="Source"><![CDATA[-- BoardUpService: allows players to board up openings (doors/windows/passages)
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local RateLimiter = require(game.ServerScriptService.AntiCheat.RateLimiter)
+
+local BoardUpService = {}
+
+local DEFAULT = {
+    PlankWidth = 1.5,
+    PlankThickness = 0.2,
+    Hold = 0.2,
+    MaxBoardsPerOpening = 24,
+    MaxPerMinute = 30,
+    KeyCode = Enum.KeyCode.E,
+    Distance = 12,
+    Material = Enum.Material.WoodPlanks,
+    Color = Color3.fromRGB(155, 120, 80),
+}
+
+local function getCfg(cfg)
+    local out = {}
+    for k,v in pairs(DEFAULT) do out[k] = (cfg and cfg[k]) or v end
+    return out
+end
+
+local function computeQuota(proxy: BasePart, cfg)
+    local axis = proxy:GetAttribute("Axis") or "x"
+    local length = (axis == "x") and proxy.Size.X or proxy.Size.Z
+    local N = math.max(1, math.ceil(length / cfg.PlankWidth))
+    N = math.min(N, cfg.MaxBoardsPerOpening)
+    local boards = proxy:FindFirstChild("Boards")
+    local current = boards and #boards:GetChildren() or 0
+    return N, current
+end
+
+local function setPromptEnabled(proxy: BasePart, enabled: boolean)
+    local pp = proxy:FindFirstChildOfClass("ProximityPrompt")
+    if pp then
+        pp.Enabled = enabled
+        if not enabled then pp.ObjectText = "Sealed" end
+    end
+end
+
+local function countChildren(folder)
+    local n = 0
+    for _, _ in ipairs(folder:GetChildren()) do n += 1 end
+    return n
+end
+
+-- per-proxy per-player last time stamp to enforce hold build time
+local lastAt: { [Instance]: { [number]: number } } = {}
+
+local function placeBoard(player: Player, proxy: BasePart, cfg)
+    if not player or not player.Parent then return end
+    cfg = getCfg(cfg)
+    local minPerMinute = math.max(cfg.MaxPerMinute or 0, math.floor(60 / math.max(0.05, cfg.Hold)) + 5)
+    if not RateLimiter.Allow(player, "BOARDUP", minPerMinute) then return end
+
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not (hrp and hrp:IsA("BasePart")) then return end
+    local dist = (hrp.Position - proxy.Position).Magnitude
+    if dist > (cfg.Distance + 2) then return end
+
+    -- opening dimensions
+    local axis = proxy:GetAttribute("Axis") or "x"
+    local boards = proxy:FindFirstChild("Boards")
+    if not boards then boards = Instance.new("Folder"); boards.Name = "Boards"; boards.Parent = proxy end
+
+    local length = (axis == "x") and proxy.Size.X or proxy.Size.Z
+    local height = proxy.Size.Y
+    if length <= 0.1 or height <= 0.1 then return end
+
+    local N, current = computeQuota(proxy, cfg)
+    -- Enforce that each plank requires at least Hold seconds of continuous holding
+    lastAt[proxy] = lastAt[proxy] or {}
+    local now = os.clock()
+    local last = lastAt[proxy][player.UserId] or 0
+    if now - last < cfg.Hold - 1e-3 then
+        return
+    end
+    lastAt[proxy][player.UserId] = now
+    if current >= N then
+        setPromptEnabled(proxy, false)
+        return
+    end
+
+    local slotW = length / N
+    local idx = current -- 0-based
+    local offsetAlong = -length * 0.5 + (idx + 0.5) * slotW
+
+    local plank = Instance.new("Part")
+    plank.Anchored = true
+    plank.CanCollide = true
+    plank.Material = cfg.Material
+    plank.Color = cfg.Color
+    plank.Name = string.format("Board_%d", idx + 1)
+    if axis == "x" then
+        plank.Size = Vector3.new(slotW, height, cfg.PlankThickness)
+        plank.CFrame = proxy.CFrame * CFrame.new(offsetAlong, 0, 0)
+    else
+        plank.Size = Vector3.new(cfg.PlankThickness, height, slotW)
+        plank.CFrame = proxy.CFrame * CFrame.new(0, 0, offsetAlong)
+    end
+    plank.Parent = boards
+
+    if idx + 1 >= N then setPromptEnabled(proxy, false) end
+end
+
+function BoardUpService.Attach(model: Model, cfg)
+    if not (model and model.Parent) then return end
+    local openings = model:FindFirstChild("Openings")
+    if not openings then return end
+
+    -- Hook remote for hold-to-board behavior
+    local eventsOk, Events = pcall(function() return require(game.ReplicatedStorage.Net.Events) end)
+    if eventsOk and Events and Events.BoardUp then
+        Events.BoardUp.OnServerEvent:Connect(function(player, proxy)
+            if typeof(proxy) == "Instance" and proxy:IsDescendantOf(openings) then
+                placeBoard(player, proxy, cfg)
+            end
+        end)
+    end
+
+    for _, proxy in ipairs(openings:GetChildren()) do
+        if proxy:IsA("BasePart") then
+            local prompt = proxy:FindFirstChildOfClass("ProximityPrompt")
+            if prompt then
+                prompt.KeyboardKeyCode = (cfg and cfg.KeyCode) or DEFAULT.KeyCode
+                prompt.HoldDuration = (cfg and cfg.Hold) or DEFAULT.Hold
+                prompt.MaxActivationDistance = (cfg and cfg.Distance) or DEFAULT.Distance
+                -- Disable prompt if opening already sealed
+                local N, current = computeQuota(proxy, getCfg(cfg))
+                if current >= N then setPromptEnabled(proxy, false) end
+                -- Ensure a board is placed when a full hold completes (single-step)
+                prompt.Triggered:Connect(function(player)
+                    placeBoard(player, proxy, cfg)
+                end)
+            end
+        end
+    end
+end
+
+return BoardUpService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="13">
+        <Properties>
           <string name="Name">ConstructionService</string>
           <string name="Source"><![CDATA[-- ConstructionService: handles server-side construction generation
 -- Responsibility: listen for build requests and spawn a simple defensive box
@@ -984,9 +1624,9 @@ local function buildProceduralAt(origin: CFrame)
             Floors = 1,
             WallHeight = 16.8,
             WallThickness = 2,
-            CorridorWidth = 10,
+            CorridorWidth = 12,
             Room = { MinSize = { Width = 16, Length = 14 }, MaxSize = { Width = 34, Length = 28 } },
-            Door = { Width = 8, MinWidth = 8, Height = 9, Clearance = 3 },
+            Door = { Width = 10, MinWidth = 12, Height = 9, Clearance = 3, MinSpacing = 18 },
             ExteriorDoors = 2,
             Window = { Width = 6, Height = 5, SillHeight = 4, Spacing = 8, InsetFromCorner = 4 },
             Colors = { Walls = Color3.fromRGB(150,150,150), InteriorWalls = Color3.fromRGB(150,150,150), Corridors = Color3.fromRGB(170,170,170), Rooms = Color3.fromRGB(210,210,210), Floor = Color3.fromRGB(140,110,80), Roof = Color3.fromRGB(255,255,255) },
@@ -994,8 +1634,9 @@ local function buildProceduralAt(origin: CFrame)
             GenerateFloors = false,
             GenerateFloorSlab = true,
             GenerateRoof = true,
-            Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0 },
+            Slab = { FloorThickness = 1, RoofThickness = 1, Extend = 0, FloorOffset = 0.5 },
             Debug = { Print = true, VisualizeRects = false, Randomize = true },
+            BOARDUP = { PlankWidth = 1.5, PlankThickness = 0.2, Hold = 0.2, MaxBoardsPerOpening = 24, MaxPerMinute = 30, KeyCode = Enum.KeyCode.E, Distance = 12, Material = Enum.Material.WoodPlanks, Color = Color3.fromRGB(155,120,80) },
         }
     end
 
@@ -1022,6 +1663,60 @@ local function buildProceduralAt(origin: CFrame)
         print("[ConstructionService] Generated procedural building")
     end
 
+    -- Send ASCII minimap to clients for debugging/feedback
+    pcall(function()
+        local walls = model and model:FindFirstChild("Walls")
+        if not walls then return end
+        local parts = walls:GetChildren()
+        if #parts == 0 then return end
+        local minX, maxX, minZ, maxZ = math.huge, -math.huge, math.huge, -math.huge
+        for _, p in ipairs(parts) do
+            if p:IsA("BasePart") then
+                local px, pz = p.Position.X, p.Position.Z
+                local sx, sz = p.Size.X, p.Size.Z
+                minX = math.min(minX, px - sx * 0.5)
+                maxX = math.max(maxX, px + sx * 0.5)
+                minZ = math.min(minZ, pz - sz * 0.5)
+                maxZ = math.max(maxZ, pz + sz * 0.5)
+            end
+        end
+        local spanX = math.max(1, maxX - minX)
+        local spanZ = math.max(1, maxZ - minZ)
+        local targetCols = 60
+        local cell = math.max(1, math.max(spanX, spanZ) / targetCols)
+        local cols = math.floor(spanX / cell + 0.5)
+        local rows = math.floor(spanZ / cell + 0.5)
+        local grid = {}
+        for r = 1, rows do
+            local row = table.create(cols, " ")
+            grid[r] = row
+        end
+        for _, p in ipairs(parts) do
+            if p:IsA("BasePart") then
+                local x0 = p.Position.X - p.Size.X * 0.5
+                local x1 = p.Position.X + p.Size.X * 0.5
+                local z0 = p.Position.Z - p.Size.Z * 0.5
+                local z1 = p.Position.Z + p.Size.Z * 0.5
+                local c0 = math.max(1, math.floor((x0 - minX) / cell) + 1)
+                local c1 = math.min(cols, math.floor((x1 - minX) / cell) + 1)
+                local r0 = math.max(1, math.floor((z0 - minZ) / cell) + 1)
+                local r1 = math.min(rows, math.floor((z1 - minZ) / cell) + 1)
+                for r = r0, r1 do
+                    local row = grid[r]
+                    for c = c0, c1 do
+                        row[c] = "#"
+                    end
+                end
+            end
+        end
+        local lines = {}
+        for r = rows, 1, -1 do
+            lines[#lines + 1] = table.concat(grid[r])
+        end
+        local mapText = table.concat(lines, "\n")
+        print("[Construction Minimap]\n" .. mapText)
+    end)
+
     -- Move Green spawn to the largest room center (on floor)
     if meta and meta.largestRoomCenter and meta.floorTopY then
         local spawn = getGreenSpawn()
@@ -1040,18 +1735,26 @@ local function buildProceduralAt(origin: CFrame)
         local pad = 6
         local extentX = bboxSize.X + pad
         local extentZ = bboxSize.Z + pad
-        -- Set grass top slightly below the floor bottom to avoid overlap with spawns and floor
-        local targetTop = meta.floorTopY - 0.5
+        -- Set grass top below the original floor base (ignoring visual floor offset)
+        local baseY = meta.floorBaseY or meta.floorTopY
+        local targetTop = baseY - 2
 
-        -- Carve out existing terrain above targetTop within bounds
-        local airHeight = 64
-        local airCF = CFrame.new(bboxCF.Position.X, targetTop + airHeight * 0.5, bboxCF.Position.Z)
+        -- Carve out existing terrain from well below up to just below the floor within bounds
+        local airHeight = 128
+        local airCF = CFrame.new(bboxCF.Position.X, targetTop - airHeight * 0.5, bboxCF.Position.Z)
         terrain:FillBlock(airCF, Vector3.new(extentX, airHeight, extentZ), Enum.Material.Air)
 
-        -- Refill with grass up to targetTop
-        local grassThick = 8
-        local grassCF = CFrame.new(bboxCF.Position.X, targetTop - grassThick * 0.5, bboxCF.Position.Z)
+        -- Refill with grass up to slightly below the floor to avoid z-fighting
+        local grassTop = targetTop -- targetTop already includes a 2-stud offset below the floor
+        local grassThick = 32
+        local grassCF = CFrame.new(bboxCF.Position.X, grassTop - grassThick * 0.5, bboxCF.Position.Z)
         terrain:FillBlock(grassCF, Vector3.new(extentX, grassThick, extentZ), Enum.Material.Grass)
+    end)
+
+    -- Attach board-up interactions
+    pcall(function()
+        local BoardUp = require(script.Parent:WaitForChild("BoardUpService"))
+        BoardUp.Attach(model, buildCfg.BOARDUP or {})
     end)
 end
 
@@ -1112,11 +1815,11 @@ return ConstructionService
         </Properties>
       </Item>
     </Item>
-    <Item class="Folder" referent="13">
+    <Item class="Folder" referent="14">
       <Properties>
         <string name="Name">Gameplay</string>
       </Properties>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">HitRegService</string>
           <string name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1255,7 +1958,7 @@ game:BindToClose(cleanupConnections)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">ObjectiveService</string>
           <string name="Source"><![CDATA[-- Objective: spawn, pickup, steal, carry-follow, deliver at Green spawn
@@ -1722,7 +2425,7 @@ return ObjectiveService
         </Properties>
       </Item>
     </Item>
-    <Item class="ModuleScript" referent="16">
+    <Item class="ModuleScript" referent="17">
       <Properties>
         <string name="Name">LobbyManager</string>
         <string name="Source">-- Manages lobby countdown when 2+ players are present
@@ -1884,7 +2587,7 @@ end)
 return LobbyManager</string>
       </Properties>
     </Item>
-    <Item class="Script" referent="17">
+    <Item class="Script" referent="18">
       <Properties>
         <string name="Name">Main</string>
         <token name="RunContext">0</token>
@@ -1907,11 +2610,11 @@ LobbyManager.CheckAndStart()
 ]]></string>
       </Properties>
     </Item>
-    <Item class="Folder" referent="18">
+    <Item class="Folder" referent="19">
       <Properties>
         <string name="Name">Round</string>
       </Properties>
-      <Item class="ModuleScript" referent="19">
+      <Item class="ModuleScript" referent="20">
         <Properties>
           <string name="Name">RoundService</string>
           <string name="Source"><![CDATA[local Players = game:GetService("Players")
@@ -2096,7 +2799,7 @@ return RoundService
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="20">
+      <Item class="ModuleScript" referent="21">
         <Properties>
           <string name="Name">RoundState</string>
           <string name="Source"><![CDATA[-- Round state enum
@@ -2108,7 +2811,7 @@ return State
         </Properties>
       </Item>
     </Item>
-    <Item class="Script" referent="21">
+    <Item class="Script" referent="22">
       <Properties>
         <string name="Name">Setup</string>
         <token name="RunContext">0</token>
@@ -2220,7 +2923,7 @@ pcall(function()
     terrain:Clear()
     local thickness = 8
     local topY = baseplate.Position.Y + (BASEPLATE_SIZE.Y * 0.5)
-    local offsetDown = 0.5 -- keep grass safely below spawns/baseplate
+    local offsetDown = 2 -- push grass safely below spawns/baseplate
     local cf = CFrame.new(0, (topY - offsetDown) - thickness * 0.5, 0)
     local pad = 1.2 -- extend a bit beyond the baseplate borders
     local fillSize = Vector3.new(BASEPLATE_SIZE.X * pad, thickness, BASEPLATE_SIZE.Z * pad)
@@ -2261,6 +2964,21 @@ local greenPos = Vector3.new(halfSize, spawnY, halfSize)   -- Right side
 
 local redSpawn = createSpawn("RedSpawn", redTeam, redPos)
 local greenSpawn = createSpawn("GreenSpawn", greenTeam, greenPos)
+
+-- Carve air above spawns to guarantee visibility (in case terrain overlaps)
+pcall(function()
+    local terrain = Workspace.Terrain
+    local function clearAround(part)
+        if not (part and part:IsA("BasePart")) then return end
+        local size = part.Size
+        local pad = 6
+        local height = 64
+        local cf = CFrame.new(part.Position.X, part.Position.Y + height * 0.5, part.Position.Z)
+        terrain:FillBlock(cf, Vector3.new(size.X + pad, height, size.Z + pad), Enum.Material.Air)
+    end
+    clearAround(redSpawn)
+    clearAround(greenSpawn)
+end)
 
 -- Disable any other spawn locations that might exist in the place/template
 for _, inst in ipairs(Workspace:GetDescendants()) do
@@ -2303,20 +3021,20 @@ end)
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="22">
+  <Item class="StarterPlayer" referent="23">
     <Properties>
       <string name="Name">StarterPlayer</string>
     </Properties>
-    <Item class="StarterCharacterScripts" referent="23">
+    <Item class="StarterCharacterScripts" referent="24">
       <Properties>
         <string name="Name">StarterCharacterScripts</string>
       </Properties>
     </Item>
-    <Item class="StarterPlayerScripts" referent="24">
+    <Item class="StarterPlayerScripts" referent="25">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="25">
+      <Item class="LocalScript" referent="26">
         <Properties>
           <string name="Name">DisableChat</string>
           <string name="Source"><![CDATA[-- Immediate chat disabling to prevent ChatScript errors
@@ -2351,7 +3069,7 @@ end)
 ]]></string>
         </Properties>
       </Item>
-      <Item class="LocalScript" referent="26">
+      <Item class="LocalScript" referent="27">
         <Properties>
           <string name="Name">DisableClassicChat</string>
           <string name="Source"><![CDATA[-- This script is now disabled to avoid conflicts with Roblox's core chat systems
@@ -2362,11 +3080,83 @@ print("[DisableClassicChat] Chat disabling handled by main DisableChat script")
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="27">
+      <Item class="Folder" referent="28">
         <Properties>
           <string name="Name">Input</string>
         </Properties>
-        <Item class="LocalScript" referent="28">
+        <Item class="LocalScript" referent="29">
+          <Properties>
+            <string name="Name">BoardUp</string>
+            <string name="Source"><![CDATA[-- Client helper: while holding the Board Up prompt key, repeatedly ask server to place boards.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local UIS = game:GetService("UserInputService")
+
+local Events do
+    local ok, mod = pcall(function() return require(ReplicatedStorage:WaitForChild("Net"):WaitForChild("Events")) end)
+    if ok then Events = mod end
+end
+
+local interval = 0.2
+local boardKey = Enum.KeyCode.E
+do
+    local ok, ConfigLoader = pcall(function() return require(ReplicatedStorage.Shared.ConfigLoader) end)
+    if ok then
+        local cfg = ConfigLoader.Load("BoardUpClient")
+        if cfg and cfg.CONSTRUCTION and cfg.CONSTRUCTION.BOARDUP then
+            if cfg.CONSTRUCTION.BOARDUP.Hold then
+                interval = math.max(0.05, cfg.CONSTRUCTION.BOARDUP.Hold)
+            end
+            if cfg.CONSTRUCTION.BOARDUP.KeyCode then
+                boardKey = cfg.CONSTRUCTION.BOARDUP.KeyCode
+            end
+        end
+    end
+end
+
+local activePrompt: ProximityPrompt? = nil
+local running = false
+
+local function isOpeningPrompt(prompt: ProximityPrompt)
+    local p = prompt and prompt.Parent
+    return p and p:IsA("BasePart") and p.Parent and p.Parent.Name == "Openings"
+end
+
+local function stopLoop()
+    running = false
+    activePrompt = nil
+end
+
+local function startLoop(prompt: ProximityPrompt)
+    if running then return end
+    if not Events or not Events.BoardUp then return end
+    if not isOpeningPrompt(prompt) then return end
+    running = true
+    activePrompt = prompt
+    task.spawn(function()
+        -- Wait one interval before the first placement so each board takes full hold time
+        task.wait(interval)
+        while running and activePrompt == prompt and prompt.Enabled do
+            -- If user stopped holding the key, stop
+            if not UIS:IsKeyDown(boardKey) then break end
+            Events.BoardUp:FireServer(prompt.Parent)
+            task.wait(interval)
+        end
+        end)
+end
+
+ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+    startLoop(prompt)
+end)
+
+-- Do not stop on hold ended; keep running if key is still down (we drive our own cadence)
+
+-- Do not stop merely because the engine hides the prompt briefly; rely on key release instead
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="LocalScript" referent="30">
           <Properties>
             <string name="Name">Construction</string>
             <string name="Source"><![CDATA[-- Client input: press B to request construction
@@ -2406,7 +3196,7 @@ end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="29">
+        <Item class="LocalScript" referent="31">
           <Properties>
             <string name="Name">InputController</string>
             <string name="Source"><![CDATA[local UserInputService = game:GetService("UserInputService")
@@ -2486,11 +3276,11 @@ end)
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="30">
+      <Item class="Folder" referent="32">
         <Properties>
           <string name="Name">UI</string>
         </Properties>
-        <Item class="LocalScript" referent="31">
+        <Item class="LocalScript" referent="33">
           <Properties>
             <string name="Name">Hud</string>
             <string name="Source">-- Enhanced HUD with clear score display, timer, and team assignment
@@ -2586,6 +3376,12 @@ local attackCorner = Instance.new("UICorner")
 attackCorner.CornerRadius = UDim.new(0, 10)
 attackCorner.Parent = attackFrame
 
+local attackStroke = Instance.new("UIStroke")
+attackStroke.Thickness = 3
+attackStroke.Color = Color3.fromRGB(255, 100, 100)
+attackStroke.Transparency = 1  -- Initially transparent
+attackStroke.Parent = attackFrame
+
 local attackGradient = Instance.new("UIGradient")
 attackGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
@@ -2640,6 +3436,12 @@ defenseFrame.Parent = scoreSection
 local defenseCorner = Instance.new("UICorner")
 defenseCorner.CornerRadius = UDim.new(0, 10)
 defenseCorner.Parent = defenseFrame
+
+local defenseStroke = Instance.new("UIStroke")
+defenseStroke.Thickness = 3
+defenseStroke.Color = Color3.fromRGB(100, 255, 100)
+defenseStroke.Transparency = 1  -- Initially transparent
+defenseStroke.Parent = defenseFrame
 
 local defenseGradient = Instance.new("UIGradient")
 defenseGradient.Color = ColorSequence.new{
@@ -2719,46 +3521,6 @@ infoSection.Position = UDim2.new(0, 20, 1, -44)
 infoSection.BackgroundTransparency = 1
 infoSection.Parent = container
 
--- Team indicator
-local teamCard = Instance.new("Frame")
-teamCard.Size = UDim2.new(0, 120, 1, 0)
-teamCard.Position = UDim2.new(0, 0, 0, 0)
-teamCard.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-teamCard.BackgroundTransparency = 0.3
-teamCard.BorderSizePixel = 0
-teamCard.Parent = infoSection
-
-local teamCardCorner = Instance.new("UICorner")
-teamCardCorner.CornerRadius = UDim.new(0, 10)
-teamCardCorner.Parent = teamCard
-
-local teamCardStroke = Instance.new("UIStroke")
-teamCardStroke.Thickness = 2
-teamCardStroke.Color = Color3.fromRGB(100, 100, 100)
-teamCardStroke.Transparency = 0.5
-teamCardStroke.Parent = teamCard
-
-local teamDot = Instance.new("Frame")
-teamDot.Size = UDim2.new(0, 8, 0, 8)
-teamDot.Position = UDim2.new(0, 12, 0.5, -4)
-teamDot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
-teamDot.BorderSizePixel = 0
-teamDot.Parent = teamCard
-
-local teamDotCorner = Instance.new("UICorner")
-teamDotCorner.CornerRadius = UDim.new(0.5, 0)
-teamDotCorner.Parent = teamDot
-
-local teamName = Instance.new("TextLabel")
-teamName.Size = UDim2.new(1, -28, 1, 0)
-teamName.Position = UDim2.new(0, 28, 0, 0)
-teamName.BackgroundTransparency = 1
-teamName.TextColor3 = Color3.fromRGB(220, 220, 220)
-teamName.TextXAlignment = Enum.TextXAlignment.Left
-teamName.Font = Enum.Font.SourceSansBold
-teamName.TextSize = 14
-teamName.Text = "SPECTATOR"
-teamName.Parent = teamCard
 
 -- Timer display
 local timerCard = Instance.new("Frame")
@@ -2904,36 +3666,38 @@ local function updatePanel()
     attackScoreLabel.Text = tostring(scores.A or 0)
     defenseScoreLabel.Text = tostring(scores.B or 0)
 
-    -- Update team indicator
+    -- Update team indicator (removed - now handled by score styling)
     local team = Players.LocalPlayer.Team
     if team then
         local teamColor = team.TeamColor.Color
-        teamCard.BackgroundColor3 = teamColor:Lerp(Color3.new(0,0,0), 0.7)
-        teamCardStroke.Color = teamColor
-        teamDot.BackgroundColor3 = teamColor
-        teamName.Text = string.upper(team.Name)
+        -- Team indicator removed - functionality moved to score styling
 
-        -- Highlight active team score
-        if team.Name == "Attack" or team.Name == "Green" then
-            attackFrame.BackgroundTransparency = 0.5
-            defenseFrame.BackgroundTransparency = 0.75
-            attackGradient.Enabled = true
-            defenseGradient.Enabled = false
-        elseif team.Name == "Defense" or team.Name == "Red" then
-            attackFrame.BackgroundTransparency = 0.75
-            defenseFrame.BackgroundTransparency = 0.5
-            attackGradient.Enabled = false
-            defenseGradient.Enabled = true
+        -- Highlight active team score with team colors
+        if team.Name == "Red" then
+            -- Red team: red border and transparent red background for attack score
+            attackFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+            attackFrame.BackgroundTransparency = 0.3  -- Transparent red
+            attackStroke.Transparency = 0  -- Show red border
+            defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+            defenseFrame.BackgroundTransparency = 0.7  -- Default transparency
+            defenseStroke.Transparency = 1  -- Hide green border
+        elseif team.Name == "Green" then
+            -- Green team: green border and transparent green background for defense score
+            defenseFrame.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            defenseFrame.BackgroundTransparency = 0.3  -- Transparent green
+            defenseStroke.Transparency = 0  -- Show green border
+            attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
+            attackFrame.BackgroundTransparency = 0.7  -- Default transparency
+            attackStroke.Transparency = 1  -- Hide red border
         end
     else
-        teamCard.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-        teamCardStroke.Color = Color3.fromRGB(100, 100, 100)
-        teamDot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
-        teamName.Text = "SPECTATOR"
+        -- Spectator: reset both frames to default styling
+        attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
         attackFrame.BackgroundTransparency = 0.7
+        attackStroke.Transparency = 1  -- Hide red border
+        defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
         defenseFrame.BackgroundTransparency = 0.7
-        attackGradient.Enabled = false
-        defenseGradient.Enabled = false
+        defenseStroke.Transparency = 1  -- Hide green border
     end
 
     -- Update timer

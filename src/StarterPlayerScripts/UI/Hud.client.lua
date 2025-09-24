@@ -91,6 +91,12 @@ local attackCorner = Instance.new("UICorner")
 attackCorner.CornerRadius = UDim.new(0, 10)
 attackCorner.Parent = attackFrame
 
+local attackStroke = Instance.new("UIStroke")
+attackStroke.Thickness = 3
+attackStroke.Color = Color3.fromRGB(255, 100, 100)
+attackStroke.Transparency = 1  -- Initially transparent
+attackStroke.Parent = attackFrame
+
 local attackGradient = Instance.new("UIGradient")
 attackGradient.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
@@ -145,6 +151,12 @@ defenseFrame.Parent = scoreSection
 local defenseCorner = Instance.new("UICorner")
 defenseCorner.CornerRadius = UDim.new(0, 10)
 defenseCorner.Parent = defenseFrame
+
+local defenseStroke = Instance.new("UIStroke")
+defenseStroke.Thickness = 3
+defenseStroke.Color = Color3.fromRGB(100, 255, 100)
+defenseStroke.Transparency = 1  -- Initially transparent
+defenseStroke.Parent = defenseFrame
 
 local defenseGradient = Instance.new("UIGradient")
 defenseGradient.Color = ColorSequence.new{
@@ -224,46 +236,6 @@ infoSection.Position = UDim2.new(0, 20, 1, -44)
 infoSection.BackgroundTransparency = 1
 infoSection.Parent = container
 
--- Team indicator
-local teamCard = Instance.new("Frame")
-teamCard.Size = UDim2.new(0, 120, 1, 0)
-teamCard.Position = UDim2.new(0, 0, 0, 0)
-teamCard.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-teamCard.BackgroundTransparency = 0.3
-teamCard.BorderSizePixel = 0
-teamCard.Parent = infoSection
-
-local teamCardCorner = Instance.new("UICorner")
-teamCardCorner.CornerRadius = UDim.new(0, 10)
-teamCardCorner.Parent = teamCard
-
-local teamCardStroke = Instance.new("UIStroke")
-teamCardStroke.Thickness = 2
-teamCardStroke.Color = Color3.fromRGB(100, 100, 100)
-teamCardStroke.Transparency = 0.5
-teamCardStroke.Parent = teamCard
-
-local teamDot = Instance.new("Frame")
-teamDot.Size = UDim2.new(0, 8, 0, 8)
-teamDot.Position = UDim2.new(0, 12, 0.5, -4)
-teamDot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
-teamDot.BorderSizePixel = 0
-teamDot.Parent = teamCard
-
-local teamDotCorner = Instance.new("UICorner")
-teamDotCorner.CornerRadius = UDim.new(0.5, 0)
-teamDotCorner.Parent = teamDot
-
-local teamName = Instance.new("TextLabel")
-teamName.Size = UDim2.new(1, -28, 1, 0)
-teamName.Position = UDim2.new(0, 28, 0, 0)
-teamName.BackgroundTransparency = 1
-teamName.TextColor3 = Color3.fromRGB(220, 220, 220)
-teamName.TextXAlignment = Enum.TextXAlignment.Left
-teamName.Font = Enum.Font.SourceSansBold
-teamName.TextSize = 14
-teamName.Text = "SPECTATOR"
-teamName.Parent = teamCard
 
 -- Timer display
 local timerCard = Instance.new("Frame")
@@ -409,36 +381,38 @@ local function updatePanel()
     attackScoreLabel.Text = tostring(scores.A or 0)
     defenseScoreLabel.Text = tostring(scores.B or 0)
 
-    -- Update team indicator
+    -- Update team indicator (removed - now handled by score styling)
     local team = Players.LocalPlayer.Team
     if team then
         local teamColor = team.TeamColor.Color
-        teamCard.BackgroundColor3 = teamColor:Lerp(Color3.new(0,0,0), 0.7)
-        teamCardStroke.Color = teamColor
-        teamDot.BackgroundColor3 = teamColor
-        teamName.Text = string.upper(team.Name)
+        -- Team indicator removed - functionality moved to score styling
 
-        -- Highlight active team score
-        if team.Name == "Attack" or team.Name == "Green" then
-            attackFrame.BackgroundTransparency = 0.5
-            defenseFrame.BackgroundTransparency = 0.75
-            attackGradient.Enabled = true
-            defenseGradient.Enabled = false
-        elseif team.Name == "Defense" or team.Name == "Red" then
-            attackFrame.BackgroundTransparency = 0.75
-            defenseFrame.BackgroundTransparency = 0.5
-            attackGradient.Enabled = false
-            defenseGradient.Enabled = true
+        -- Highlight active team score with team colors
+        if team.Name == "Red" then
+            -- Red team: red border and transparent red background for attack score
+            attackFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+            attackFrame.BackgroundTransparency = 0.3  -- Transparent red
+            attackStroke.Transparency = 0  -- Show red border
+            defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+            defenseFrame.BackgroundTransparency = 0.7  -- Default transparency
+            defenseStroke.Transparency = 1  -- Hide green border
+        elseif team.Name == "Green" then
+            -- Green team: green border and transparent green background for defense score
+            defenseFrame.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            defenseFrame.BackgroundTransparency = 0.3  -- Transparent green
+            defenseStroke.Transparency = 0  -- Show green border
+            attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
+            attackFrame.BackgroundTransparency = 0.7  -- Default transparency
+            attackStroke.Transparency = 1  -- Hide red border
         end
     else
-        teamCard.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-        teamCardStroke.Color = Color3.fromRGB(100, 100, 100)
-        teamDot.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
-        teamName.Text = "SPECTATOR"
+        -- Spectator: reset both frames to default styling
+        attackFrame.BackgroundColor3 = Color3.fromRGB(40, 100, 180)
         attackFrame.BackgroundTransparency = 0.7
+        attackStroke.Transparency = 1  -- Hide red border
+        defenseFrame.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
         defenseFrame.BackgroundTransparency = 0.7
-        attackGradient.Enabled = false
-        defenseGradient.Enabled = false
+        defenseStroke.Transparency = 1  -- Hide green border
     end
 
     -- Update timer
