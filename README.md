@@ -19,6 +19,7 @@ A fast-paced team-based objective game built with Rojo. Red team (Attack) must c
 - `src/StarterPlayerScripts/UI/Hud.client.lua` — Enhanced HUD with score display and timer
 - `src/StarterPlayerScripts/DisableClassicChat.client.lua` — Chat system fixes
 - `default.project.json` — Rojo project configuration
+  - Includes a dedicated mapping for `ReplicatedStorage/Assets` from `assets/ReplicatedStorage/Assets`
 
 ## Features
 - ✅ **Automatic Lobby System:** 10-second countdown when 2+ players join
@@ -40,6 +41,17 @@ A fast-paced team-based objective game built with Rojo. Red team (Attack) must c
 4. In Roblox Studio, connect to the Rojo server via the plugin
 5. Press Play to start testing
 
+### Adding the Briefcase Asset (Rojo‑synced)
+- Export your Briefcase model from Studio as `.rbxmx` and place it at `assets/ReplicatedStorage/Assets/Briefcase.rbxmx` (or use a `.model.json` with the name `Briefcase`).
+- Rojo will sync it into `ReplicatedStorage/Assets/Briefcase` in Studio.
+- The game will automatically use this bundled model and skip InsertService.
+
+### Auto‑fetch referenced assets
+- Use `scripts/fetch_assets.sh` to scan the codebase for asset IDs (e.g., `InsertService:LoadAsset(…)`, `ModelAssetId = …`) and download any missing ones into `assets/ReplicatedStorage/Assets`.
+- Example:
+  - `./scripts/fetch_assets.sh`
+- Downloaded files are saved as `<id>.rbxm`. The objective loader now also checks for an asset named with the numeric ID (e.g., `ReplicatedStorage/Assets/530795465`).
+
 ### What Happens on Server Start
 - **Map Creation:** 100x100 baseplate with Red and Green team spawns in opposite corners
 - **Team Setup:** Red (Attack) and Green (Defense) teams with alternating player assignment
@@ -56,7 +68,7 @@ A fast-paced team-based objective game built with Rojo. Red team (Attack) must c
 ## Objective Mechanics
 
 ### Visual Design
-The objective is a **bright yellow neon cube (3x3x3)** with multiple visual effects:
+The objective is a **briefcase model** (asset `530795465`) enhanced with bright yellow neon highlights and multiple visual effects:
 - Point light glow (brightness: 3, range: 25)
 - Surface light (brightness: 5, range: 15)
 - Pulsing transparency animation
